@@ -8,16 +8,29 @@
 
 
 void login_screen_io(char *username, char *password, int *new_login);
+char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_ptr);
+void create_new_account(char *username, char *password, FILE *credentials_file_ptr);
+FILE *open_credentials_file();
+void print_credentials_debug(char ***credentials, int number_of_accounts);
 
 
 int main()
 {
-    char username[MAX_USERNAME];
-    char password[MAX_PASSWORD];
-    int new_login;
+    int n;
+    char username[MAX_USERNAME] = "test";
+    char password[MAX_PASSWORD] = "1234";
+    char ***credentials;
+    FILE *fp;
 
-    login_screen_io(username, password, &new_login);
-    printf("Login info:\n%s\n%s\n%d\n", username, password, new_login);
+    // login_screen_io(username, password, &new_login);
+    // printf("Login info:\n%s\n%s\n%d\n", username, password, new_login);
+
+    fp = open_credentials_file();
+    // create_new_account(username, password, fp);
+    credentials = read_credentials_file(&n, fp);
+    printf("%d\n", n);
+    print_credentials_debug(credentials, n);
+    fclose(fp);
 
 
     // Ask for user data
@@ -68,38 +81,43 @@ void login_screen_io(char *username, char *password, int *new_login)
 
 // Read account information from credentials file 'credentials_file_ptr'. 
 // Allocate space for an array to store accounts.
-void read_credentials_file(char ***credentials, int *number_of_accounts, FILE *credentials_file_ptr)
+char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_ptr)
 {
     int i;
+    char ch, ***credentials;
     *number_of_accounts = 0; 
 
     
     // Count number of lines (accounts). Then rewind for reading.
-    while (feof(credentials_file_ptr)) 
+    while ((ch = fgetc(credentials_file_ptr)) != EOF) 
     {
-        if (getc(credentials_file_ptr) == '\n')
+        if (ch == '\n')
         {
-            *number_of_accounts++;
+            *number_of_accounts += 1;
         }
     }
     rewind(credentials_file_ptr);
 
 
     // Allocate space for credentials array. Then read account data.
-    credentials = (char ***) calloc(number_of_accounts, sizeof(char **));
+    credentials = (char ***) calloc(*number_of_accounts, sizeof(char **));
     if (credentials == NULL)
     {
         puts("Not enough memory, exiting...");
-        return;
+        return NULL;
     }
-    for (i = 0; i < number_of_accounts; i++) 
+    for (i = 0; i < *number_of_accounts; i++) 
     {
-        credentials[i] = calloc(2, sizeof(char *));
-        credentials[i][0] = calloc(MAX_USERNAME, sizeof(char));
-        credentials[i][1] = calloc(MAX_PASSWORD, sizeof(char));
+        credentials[i] = (char **) calloc(2, sizeof(char *));
+        credentials[i][0] = (char *) calloc(MAX_USERNAME, sizeof(char));
+        credentials[i][1] = (char *) calloc(MAX_PASSWORD, sizeof(char));
 
         fscanf(credentials_file_ptr, "%s %s", credentials[i][0], credentials[i][1]);
     }
+
+
+    // Return accounts.
+    return credentials;
 }
 
 
@@ -126,8 +144,21 @@ FILE *open_credentials_file()
     if (credentials_file_ptr == NULL)
     {
         puts("Credentials file is not accessible.");
-        return;
     }
 
     return credentials_file_ptr;
+}
+
+
+// Print account information. Only for DEBUG purpose.
+void print_credentials_debug(char ***credentials, int number_of_accounts)
+{
+    int i;
+
+    puts("Printing accounts:");
+    for (i = 0; i < number_of_accounts; i++)
+    {
+        printf("%d %s %s\n", i, credentials[i][0], credentials[i][1]);
+    }
+    puts("Printing accounts complete...");
 }
