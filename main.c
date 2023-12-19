@@ -12,6 +12,8 @@ char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_pt
 void create_new_account(char *username, char *password, FILE *credentials_file_ptr);
 FILE *open_credentials_file();
 void print_credentials_debug(char ***credentials, int number_of_accounts);
+void free_credentials(char ***credentials, int number_of_accounts);
+int search_username(char ***credentials, int number_of_accounts, char *username);
 
 
 int main()
@@ -28,9 +30,12 @@ int main()
     fp = open_credentials_file();
     // create_new_account(username, password, fp);
     credentials = read_credentials_file(&n, fp);
-    printf("%d\n", n);
-    print_credentials_debug(credentials, n);
+    // printf("%d\n", n);
+    // print_credentials_debug(credentials, n);
+    printf("%s is found? %d\n", "test", search_username(credentials, n, "test"));
+    printf("%s is found? %d\n", "tea", search_username(credentials, n, "tea"));
     fclose(fp);
+    free_credentials(credentials, n);
 
 
     // Ask for user data
@@ -161,4 +166,51 @@ void print_credentials_debug(char ***credentials, int number_of_accounts)
         printf("%d %s %s\n", i, credentials[i][0], credentials[i][1]);
     }
     puts("Printing accounts complete...");
+}
+
+
+// Free credentials array.
+void free_credentials(char ***credentials, int number_of_accounts)
+{
+    int i;
+
+    for (i = 0; i < number_of_accounts; i++)
+    {
+        free(credentials[i][0]);
+        free(credentials[i][1]);
+        free(credentials[i]);
+    } 
+    
+    free(credentials);
+}
+
+
+// Search the credentials array. If username found, return its index.
+// Otherwise return -1.
+int search_username(char ***credentials, int number_of_accounts, char *username)
+{
+    int i = 0, is_found = 0;
+
+
+    // Search trough the credentials array.
+    while ((i < number_of_accounts) && (is_found == 0))
+    {
+        if (strcmp(credentials[i][0], username) == 0)
+        {
+            is_found = 1;
+        }
+
+        i++;
+    }
+
+
+    // If username found, return its index. Otherwise return -1.
+    if (is_found)
+    {
+        return i-1;
+    }
+    else
+    {
+        return -1;
+    }
 }
