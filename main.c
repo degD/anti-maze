@@ -6,6 +6,8 @@
 #define MAX_USERNAME 20
 #define MAX_PASSWORD 20
 
+// TODO: FIX USER DENIES NEW ACCOUNT. EXIT IN RETURN.
+
 
 void login_screen_io(char *username, char *password, int *new_login);
 char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_ptr);
@@ -14,37 +16,17 @@ FILE *open_credentials_file();
 void print_credentials_debug(char ***credentials, int number_of_accounts);
 void free_credentials(char ***credentials, int number_of_accounts);
 int search_username(char ***credentials, int number_of_accounts, char *username);
+int check_password(char ***credentials, int number_of_accounts, int username_index, char *password);
+void new_account_io(char *new_username, char *new_password);
+char *login_to_account_wrapper_io();
 
 
 int main()
 {
-    int n;
-    char username[MAX_USERNAME] = "test";
-    char password[MAX_PASSWORD] = "1234";
-    char ***credentials;
-    FILE *fp;
+    char *username;
 
-    // login_screen_io(username, password, &new_login);
-    // printf("Login info:\n%s\n%s\n%d\n", username, password, new_login);
-
-    fp = open_credentials_file();
-    // create_new_account(username, password, fp);
-    credentials = read_credentials_file(&n, fp);
-    // printf("%d\n", n);
-    // print_credentials_debug(credentials, n);
-    printf("%s is found? %d\n", "test", search_username(credentials, n, "test"));
-    printf("%s is found? %d\n", "tea", search_username(credentials, n, "tea"));
-    fclose(fp);
-    free_credentials(credentials, n);
-
-
-    // Ask for user data
-
-
-    // Print maze and play the game
-
-
-    // Print game score
+    username = login_to_account_wrapper_io();
+    puts(username);
 
     return 0;
 }
@@ -76,10 +58,7 @@ void login_screen_io(char *username, char *password, int *new_login)
         {
             *new_login = 1;
         }
-        else 
-        {
-            puts("Exiting...");
-        }
+        getc(stdin); // Prevent remaining newline cause problems. 
     }
 }
 
@@ -213,4 +192,114 @@ int search_username(char ***credentials, int number_of_accounts, char *username)
     {
         return -1;
     }
+}
+
+
+// If passwords match, return 1. If not, return 0.
+int check_password(char ***credentials, int number_of_accounts, int username_index, char *password)
+{
+    int i = username_index;
+
+    if (strcmp(credentials[i][1], password) == 0)
+    {
+        return 1;
+    }
+    else 
+    {
+        return 0;
+    }
+}
+
+
+// Read new username and password from user to create new account.
+void new_account_io(char *new_username, char *new_password)
+{
+    printf("New username: ");
+    fgets(new_username, MAX_USERNAME, stdin);
+    printf("New password: ");
+    fgets(new_password, MAX_PASSWORD, stdin);
+
+    new_username[strcspn(new_username, "\n")] = '\0';
+    new_password[strcspn(new_password, "\n")] = '\0';
+}
+
+
+// Ask user to enter account informations. Warn user when entered wrong/incomplete information. 
+// Create new account for user. Modify accounts file according to operations.
+// Overall wrapper for account and login operations.
+char *login_to_account_wrapper_io()
+{
+    char *username = calloc(MAX_USERNAME, sizeof(char));
+    char *password = calloc(MAX_PASSWORD, sizeof(char));
+    char ***credentials;
+    int new_login, number_of_accounts, login_successful = 0;
+    int username_index;
+    FILE *credentials_file_ptr;
+
+
+    // Read credentials file.
+    credentials_file_ptr = open_credentials_file();
+    credentials = read_credentials_file(&number_of_accounts, credentials_file_ptr);
+
+
+    // Login loop. Repeat until user manages to login with either an existing account or by
+    // creating a new account. New accounts get saved to 'login.dat' file.
+    while (!login_successful)
+    {
+        // When no username and password given, that means user wants to create a new account.
+        login_screen_io(username, password, &new_login);
+
+        // Search the username and check the password. If both are correct, exit the login loop.
+        if (new_login == 0)
+        {
+            username_index = search_username(credentials, number_of_accounts, username);
+            if (username_index != -1)
+            {
+                if (check_password(credentials, number_of_accounts, username_index, password))
+                {
+                    login_successful = 1;
+                }
+                else
+                {
+                    puts("Wrong password. Try again.");
+                }
+            }
+            else
+            {
+                puts("Username not found.");
+            }
+        }
+        else
+        {
+            // Creat a new account for the user.
+            while (!login_successful) 
+            {
+                // Ask for a new username and password.
+                new_account_io(username, password);
+
+                // Search username of the user and save as the new account if it's unique.
+                if (search_username(credentials, number_of_accounts, username) == -1)
+                {
+                    puts("Creating new account...");
+                    create_new_account(username, password, credentials_file_ptr);
+                    login_successful = 1;
+                }
+                else 
+                {
+                    puts("Username exists. Please select another username.");
+                }
+            }
+        }
+    }
+    puts("Login successful.");
+
+
+    // Close the file and free allocated arrays.
+    fclose(credentials_file_ptr);
+    free_credentials(credentials, number_of_accounts);
+    free(password);
+
+
+    // Return the username of user.
+    return username;
 }
