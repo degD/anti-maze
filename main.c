@@ -32,8 +32,9 @@ int main()
 }
 
 
-// Print login screen and read user credentials.
-// If no username and password given, ask to create a new account.
+// Print login screen and read user credentials. new_login = 0.
+// If no username and password given, ask to create a new account. new_login = 1.
+// If user denies creating a new account, new_login = 2.
 void login_screen_io(char *username, char *password, int *new_login)
 {
     *new_login = 0;
@@ -57,6 +58,10 @@ void login_screen_io(char *username, char *password, int *new_login)
         if (getc(stdin) == 'y') 
         {
             *new_login = 1;
+        }
+        else 
+        {
+            *new_login = 2;
         }
         getc(stdin); // Prevent remaining newline cause problems. 
     }
@@ -269,7 +274,7 @@ char *login_to_account_wrapper_io()
                 puts("Username not found.");
             }
         }
-        else
+        else if(new_login == 1)
         {
             // Creat a new account for the user.
             while (!login_successful) 
@@ -289,6 +294,12 @@ char *login_to_account_wrapper_io()
                     puts("Username exists. Please select another username.");
                 }
             }
+        }
+        else 
+        {
+            // Return NULL to indicate exit.
+            puts("Exiting...");
+            return NULL;
         }
     }
     puts("Login successful.");
