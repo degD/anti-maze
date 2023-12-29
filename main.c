@@ -28,7 +28,7 @@ int check_password(char ***credentials, int number_of_accounts, int username_ind
 void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
-MAZE_MAP import_map_from_file(char *path);
+int import_map_from_file(char *path, MAZE_MAP *new_map);
 int get_number_of_maps();
 void save_new_map(MAZE_MAP new_map);
 void read_maps(MAZE_MAP *maps);
@@ -47,9 +47,8 @@ int main()
 }
 
 
-MAZE_MAP import_map_from_file(char *path)
+int import_map_from_file(char *path, MAZE_MAP *new_map)
 {
-    MAZE_MAP new_map;
     FILE *new_map_file_ptr = fopen(path, "r");
     int i, j;
     char ch;
@@ -58,7 +57,7 @@ MAZE_MAP import_map_from_file(char *path)
     if (new_map_file_ptr == NULL) 
     {
         printf("Unable to open file '%s'.\n", path);
-        return;
+        return 0;
     }
 
 
@@ -77,11 +76,11 @@ MAZE_MAP import_map_from_file(char *path)
 
 
     // Initialize new map.
-    new_map.height = i;
-    new_map.width  = j;
-    new_map.map_array = (char **) calloc(new_map.height, sizeof(char *));
-    for (i = 0; i < new_map.height; i++) 
-        new_map.map_array[i] = (char *) calloc(new_map.width, sizeof(char));
+    new_map->height = i;
+    new_map->width  = j;
+    new_map->map_array = (char **) calloc(new_map->height, sizeof(char *));
+    for (i = 0; i < new_map->height; i++) 
+        new_map->map_array[i] = (char *) calloc(new_map->width, sizeof(char));
 
 
     // Read characters from the map and convert it to the array.
@@ -95,7 +94,7 @@ MAZE_MAP import_map_from_file(char *path)
         }
         else if (ch != ' ') 
         {
-            new_map.map_array[i][j] = ch;
+            new_map->map_array[i][j] = ch;
             j++;
         }
     }
@@ -103,7 +102,7 @@ MAZE_MAP import_map_from_file(char *path)
 
     // Close file and return new MAZE_MAP.
     fclose(new_map_file_ptr);
-    return new_map;
+    return 1;
 }
 
 
