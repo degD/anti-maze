@@ -49,7 +49,8 @@ int main()
     status = import_map_from_file("examplemap1.dat", &m);
     if (status) {
         puts("Map import successful!");
-        print_single_map(m);
+        puts("Saving map...");
+        save_new_map(m);
     }
     else
         puts("Map import failed...");
