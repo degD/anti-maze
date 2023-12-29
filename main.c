@@ -40,10 +40,8 @@ void free_maps_array(MAZE_MAP *maps, int number_of_maps);
 
 int main()
 {
-    char *username;
-
-    username = login_to_account_wrapper_io();
-    puts(username);
+    puts("TEST FOR READING MAP FILES...");
+    printf("Currently, there are %d maps.\n", get_number_of_maps());
 
     return 0;
 }
