@@ -36,26 +36,42 @@ void print_single_map(MAZE_MAP map);
 void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps, int number_of_maps);
+MAZE_MAP initialize_new_map(int height, int width);
 
 
 int main()
 {
-    int status = 0;
-    MAZE_MAP m;
+    int n;
+    MAZE_MAP m[10], t;
 
     puts("TEST FOR READING MAP FILES...");
     printf("Currently, there are %d maps.\n", get_number_of_maps());
 
-    status = import_map_from_file("examplemap1.dat", &m);
-    if (status) {
-        puts("Map import successful!");
-        puts("Saving map...");
-        save_new_map(m);
-    }
-    else
-        puts("Map import failed...");
+    // import_map_from_file("examplemap1.dat", &t);
+    // save_new_map(t);
+
+    n = get_number_of_maps();
+    read_maps(m);
+    puts("Read maps.dat file.");
+    print_single_map(m[0]);
 
     return 0;
+}
+
+
+MAZE_MAP initialize_new_map(int height, int width)
+{
+    int i;
+    MAZE_MAP map;
+
+    map.height = height;
+    map.width  = width;
+
+    map.map_array = (char **) calloc(map.height, sizeof(char *));
+    for (i = 0; i < map.height; i++) 
+        map.map_array[i] = (char *) calloc(map.width, sizeof(char));
+
+    return map;
 }
 
 
@@ -88,11 +104,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 
 
     // Initialize new map.
-    new_map->height = i+1;
-    new_map->width  = j;
-    new_map->map_array = (char **) calloc(new_map->height, sizeof(char *));
-    for (i = 0; i < new_map->height; i++) 
-        new_map->map_array[i] = (char *) calloc(new_map->width, sizeof(char));
+    *new_map = initialize_new_map(i+1, j);
 
 
     // Read characters from the map and convert it to the array.
@@ -167,7 +179,7 @@ void save_new_map(MAZE_MAP new_map)
 
 void read_maps(MAZE_MAP *maps)
 {
-    int i, j, number_of_maps;
+    int i, h, number_of_maps;
     FILE *maps_ptr = fopen("maps.dat", "rb");
 
     if (maps_ptr == NULL)
@@ -177,12 +189,15 @@ void read_maps(MAZE_MAP *maps)
     }
 
 
-    number_of_maps = get_number_of_maps();
+    fscanf(maps_ptr, "%d ", &number_of_maps);
     for (i = 0; i < number_of_maps; i++)
     {
-        fwrite(&maps[i], sizeof(MAZE_MAP), 1, maps_ptr);
-        for (j = 0; j < maps[j].height; j++)
-            fwrite(maps[j].map_array[j], sizeof(char), maps[i].width, maps_ptr);
+        fread(&maps[i], sizeof(MAZE_MAP), 1, maps_ptr);
+        
+        maps[i] = initialize_new_map(maps[i].height, maps[i].width);    
+        for (h = 0; h < maps[i].height; h++) {
+            fread(maps[i].map_array[h], sizeof(char), maps[i].width, maps_ptr);
+        }
     }
 
     fclose(maps_ptr);
