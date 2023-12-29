@@ -5,8 +5,16 @@
 
 #define MAX_USERNAME 20
 #define MAX_PASSWORD 20
+#define MAX_PATH_LEN 200
+#define MAX_MAP_NAME 10
 
-// TODO: FIX USER DENIES NEW ACCOUNT. EXIT IN RETURN.
+
+typedef struct maze_map 
+{
+    int height, width;
+    char **map_array;
+} 
+MAZE_MAP;
 
 
 void login_screen_io(char *username, char *password, int *new_login);
@@ -20,6 +28,15 @@ int check_password(char ***credentials, int number_of_accounts, int username_ind
 void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
+MAZE_MAP import_map_from_file(char *path);
+int get_number_of_maps();
+void save_new_map(MAZE_MAP new_map);
+void read_maps(MAZE_MAP *maps);
+void print_single_map(MAZE_MAP map);
+void print_maps(MAZE_MAP *maps, int number_of_maps);
+void free_map(MAZE_MAP map);
+void free_maps_array(MAZE_MAP *maps, int number_of_maps);
+
 
 int main()
 {
@@ -29,6 +46,189 @@ int main()
     puts(username);
 
     return 0;
+}
+
+
+MAZE_MAP import_map_from_file(char *path)
+{
+    MAZE_MAP new_map;
+    FILE *new_map_file_ptr = fopen(path, "r");
+    int i, j;
+    char ch;
+
+
+    if (new_map_file_ptr == NULL) 
+    {
+        printf("Unable to open file '%s'.\n", path);
+        return;
+    }
+
+
+    // Get map height and width.
+    i = j = 0;
+    while ((ch = fgetc(new_map_file_ptr)) != EOF)
+    {
+        if (ch == '\n') 
+        {
+            i++;
+            j = 0;
+        }
+        else if (ch != ' ') j++;
+    }
+    rewind(new_map_file_ptr);
+
+
+    // Initialize new map.
+    new_map.height = i;
+    new_map.width  = j;
+    new_map.map_array = (char **) calloc(new_map.height, sizeof(char *));
+    for (i = 0; i < new_map.height; i++) 
+        new_map.map_array[i] = (char *) calloc(new_map.width, sizeof(char));
+
+
+    // Read characters from the map and convert it to the array.
+    i = j = 0;
+    while ((ch = fgetc(new_map_file_ptr)) != EOF)
+    {
+        if (ch == '\n') 
+        {
+            i++;
+            j = 0;
+        }
+        else if (ch != ' ') 
+        {
+            new_map.map_array[i][j] = ch;
+            j++;
+        }
+    }
+
+
+    // Close file and return new MAZE_MAP.
+    fclose(new_map_file_ptr);
+    return new_map;
+}
+
+
+int get_number_of_maps()
+{
+    int number_of_maps;
+    FILE *maps_ptr = fopen("maps.dat", "rb");
+
+    if (maps_ptr != NULL)
+    {
+        fscanf(maps_ptr, "%d ", &number_of_maps);
+        fclose(maps_ptr);
+        return number_of_maps;
+    }
+    fclose(maps_ptr);
+    return 0;
+}
+
+
+void save_new_map(MAZE_MAP new_map)
+{
+    int i, number_of_maps;
+    FILE *maps_ptr = fopen("maps.dat", "r+b");
+
+    if (maps_ptr == NULL)
+    {
+        // Create the file if it does not exist.
+        maps_ptr = fopen("maps.dat", "w");
+        fputs("0\n", maps_ptr);
+        fclose(maps_ptr);
+
+        maps_ptr = fopen("maps.dat", "r+b");
+    }
+
+    
+    number_of_maps = get_number_of_maps();
+    fprintf(maps_ptr, "%d\n", number_of_maps+1);
+    fclose(maps_ptr);
+
+
+    // Saving MAZE_MAP struct by appending to 'maps.dat' file.
+    maps_ptr = fopen("maps.dat", "ab");
+    fwrite(&new_map, sizeof(MAZE_MAP), 1, maps_ptr);
+    for (i = 0; i < new_map.height; i++)
+        fwrite(new_map.map_array[i], sizeof(char), new_map.width, maps_ptr);
+
+    fclose(maps_ptr);
+}
+
+
+void read_maps(MAZE_MAP *maps)
+{
+    int map_index, i, j, number_of_maps;
+    FILE *maps_ptr = fopen("maps.dat", "rb");
+
+    if (maps_ptr == NULL)
+    {
+        puts("Unable to access 'maps.dat' file.");
+        return;
+    }
+
+
+    number_of_maps = get_number_of_maps();
+    for (i = 0; i < number_of_maps; i++)
+    {
+        fwrite(&maps[i], sizeof(MAZE_MAP), 1, maps_ptr);
+        for (j = 0; j < maps[j].height; j++)
+            fwrite(maps[j].map_array[j], sizeof(char), maps[i].width, maps_ptr);
+    }
+
+    fclose(maps_ptr);
+}
+
+
+void print_single_map(MAZE_MAP map)
+{
+    int i, j;
+
+    for (i = 0; i < map.height; i++) 
+    {
+        for (j = 0; j < map.width; j++)
+        {
+            switch (map.map_array[i][j])
+            {
+                case 'P': printf("P+ "); break;
+                case 'p': printf("P- "); break;
+                case 'E': printf("e+ "); break;
+                case 'e': printf("e- "); break;
+                default: printf("%c  ", map.map_array[i][j]);
+            }
+        }
+        puts("");
+    }
+}
+
+
+void print_maps(MAZE_MAP *maps, int number_of_maps)
+{
+    int i; 
+
+    puts("PRINTING MAZE MAPS\n\n");
+
+    for (i = 0; i < number_of_maps; i++)
+    {
+        printf("MAP NUMBER: %d\n", i);
+        print_single_map(maps[i]);
+        puts("");
+    }
+}
+
+
+void free_map(MAZE_MAP map)
+{
+    int i;
+    for (i = 0; i < map.height; i++) free(map.map_array[i]);
+    free(map.map_array);
+}
+
+
+void free_maps_array(MAZE_MAP *maps, int number_of_maps)
+{
+    int i;
+    for (i = 0; i < number_of_maps; i++) free_map(maps[i]);
 }
 
 
