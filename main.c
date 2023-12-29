@@ -40,8 +40,19 @@ void free_maps_array(MAZE_MAP *maps, int number_of_maps);
 
 int main()
 {
+    int status = 0;
+    MAZE_MAP m;
+
     puts("TEST FOR READING MAP FILES...");
     printf("Currently, there are %d maps.\n", get_number_of_maps());
+
+    status = import_map_from_file("examplemap1.dat", &m);
+    if (status) {
+        puts("Map import successful!");
+        print_single_map(m);
+    }
+    else
+        puts("Map import failed...");
 
     return 0;
 }
@@ -76,7 +87,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 
 
     // Initialize new map.
-    new_map->height = i;
+    new_map->height = i+1;
     new_map->width  = j;
     new_map->map_array = (char **) calloc(new_map->height, sizeof(char *));
     for (i = 0; i < new_map->height; i++) 
@@ -108,7 +119,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 
 int get_number_of_maps()
 {
-    int number_of_maps;
+    int number_of_maps = 0;
     FILE *maps_ptr = fopen("maps.dat", "rb");
 
     if (maps_ptr != NULL)
@@ -155,7 +166,7 @@ void save_new_map(MAZE_MAP new_map)
 
 void read_maps(MAZE_MAP *maps)
 {
-    int map_index, i, j, number_of_maps;
+    int i, j, number_of_maps;
     FILE *maps_ptr = fopen("maps.dat", "rb");
 
     if (maps_ptr == NULL)
