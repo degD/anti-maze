@@ -45,6 +45,7 @@ int check_password(char ***credentials, int number_of_accounts, int username_ind
 void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
+void print_map_data(MAZE_MAP map);
 int import_map_from_file(char *path, MAZE_MAP *new_map);
 int get_number_of_maps();
 void save_new_map(MAZE_MAP new_map);
@@ -53,7 +54,7 @@ void print_single_map(MAZE_MAP map);
 void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps, int number_of_maps);
-MAZE_MAP initialize_new_map(int height, int width);
+MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
 
 
 int main()
@@ -61,22 +62,31 @@ int main()
     MAZE_MAP m[10];
 
     import_map_from_file("examplemap1.dat", &m[0]);
+    print_map_data(m[0]);
     save_new_map(m[0]);
     read_maps(m);
-    printf("%d, %d\n", m[0].player_i, m[0].player_j);
+    print_map_data(m[0]);
     // main_game_loop(m[0]);
 
     return 0;
 }
 
 
-MAZE_MAP initialize_new_map(int height, int width)
+void print_map_data(MAZE_MAP map)
+{
+    printf("%d, %d, %d, %d\n", map.height, map.width, map.player_i, map.player_j);
+}
+
+
+MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j)
 {
     int i;
     MAZE_MAP map;
 
     map.height = height;
     map.width  = width;
+    map.player_i = player_i;
+    map.player_j = player_j;
 
     map.map_array = (char **) calloc(map.height, sizeof(char *));
     for (i = 0; i < map.height; i++) 
@@ -115,7 +125,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 
 
     // Initialize new map.
-    *new_map = initialize_new_map(i+1, j);
+    *new_map = initialize_new_map(i+1, j, 0, 0);
 
 
     // Read characters from the map and convert it to the array.
@@ -133,7 +143,6 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
             {
                 new_map->player_i = i;
                 new_map->player_j = j;
-                printf("%d, %d\n", new_map->player_i, new_map->player_j);
             }
             new_map->map_array[i][j] = ch;
             j++;
@@ -150,7 +159,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 int get_number_of_maps()
 {
     int number_of_maps = 0;
-    FILE *maps_ptr = fopen("maps.dat", "rb");
+    FILE *maps_ptr = fopen("maps.bin", "rb");
 
     if (maps_ptr != NULL)
     {
@@ -166,16 +175,16 @@ int get_number_of_maps()
 void save_new_map(MAZE_MAP new_map)
 {
     int i, number_of_maps;
-    FILE *maps_ptr = fopen("maps.dat", "r+b");
+    FILE *maps_ptr = fopen("maps.bin", "r+b");
 
     if (maps_ptr == NULL)
     {
         // Create the file if it does not exist.
-        maps_ptr = fopen("maps.dat", "w");
-        fputs("0\n", maps_ptr);
+        maps_ptr = fopen("maps.bin", "w");
+        fputs("0", maps_ptr);
         fclose(maps_ptr);
 
-        maps_ptr = fopen("maps.dat", "r+b");
+        maps_ptr = fopen("maps.bin", "r+b");
     }
 
     
@@ -184,9 +193,14 @@ void save_new_map(MAZE_MAP new_map)
     fclose(maps_ptr);
 
 
-    // Saving MAZE_MAP struct by appending to 'maps.dat' file.
-    maps_ptr = fopen("maps.dat", "ab");
-    fwrite(&new_map, sizeof(MAZE_MAP), 1, maps_ptr);
+    // Saving MAZE_MAP struct by appending to 'maps.bin' file.
+    maps_ptr = fopen("maps.bin", "ab");
+
+    fwrite(&new_map.height, sizeof(int), 1, maps_ptr);
+    fwrite(&new_map.width, sizeof(int), 1, maps_ptr);
+    fwrite(&new_map.player_i, sizeof(int), 1, maps_ptr);
+    fwrite(&new_map.player_j, sizeof(int), 1, maps_ptr);
+
     for (i = 0; i < new_map.height; i++)
         fwrite(new_map.map_array[i], sizeof(char), new_map.width, maps_ptr);
 
@@ -197,11 +211,11 @@ void save_new_map(MAZE_MAP new_map)
 void read_maps(MAZE_MAP *maps)
 {
     int i, h, number_of_maps;
-    FILE *maps_ptr = fopen("maps.dat", "rb");
+    FILE *maps_ptr = fopen("maps.bin", "rb");
 
     if (maps_ptr == NULL)
     {
-        puts("Unable to access 'maps.dat' file.");
+        puts("Unable to access 'maps.bin' file.");
         return;
     }
 
@@ -209,9 +223,12 @@ void read_maps(MAZE_MAP *maps)
     fscanf(maps_ptr, "%d ", &number_of_maps);
     for (i = 0; i < number_of_maps; i++)
     {
-        fread(&maps[i], sizeof(MAZE_MAP), 1, maps_ptr);
+        fread(&maps[i].height, sizeof(int), 1, maps_ptr);
+        fread(&maps[i].width, sizeof(int), 1, maps_ptr);
+        fread(&maps[i].player_i, sizeof(int), 1, maps_ptr);
+        fread(&maps[i].player_j, sizeof(int), 1, maps_ptr);
         
-        maps[i] = initialize_new_map(maps[i].height, maps[i].width);    
+        maps[i] = initialize_new_map(maps[i].height, maps[i].width, maps[i].player_i, maps[i].player_j);    
         for (h = 0; h < maps[i].height; h++) {
             fread(maps[i].map_array[h], sizeof(char), maps[i].width, maps_ptr);
         }
