@@ -4,22 +4,32 @@
 #include <stdlib.h>
 
 #ifdef _WIN32
-#include <conio.h>
-#define _ARROW_KEY 224
-#define _LEFT_ARROW 75
-#define _DOWN_ARROW 80
-#define _RIGHT_ARROW 77
-#define _UP_ARROW 72
-#define _ESC_KEY 27
-#define _CTRL_C_KEY 3
+    #include <conio.h>
+
+    #define _ARROW_KEY 224
+    #define _LEFT_ARROW 75
+    #define _DOWN_ARROW 80
+    #define _RIGHT_ARROW 77
+    #define _UP_ARROW 72
+    #define _ESC_KEY 27
+    #define _CTRL_C_KEY 3
+
+    #define CLEAR_SCREEN() system("cls")
 #endif 
+
+
 // TODO: Also add linux compatibility
+#ifdef linux
+    #define CLEAR_SCREEN() system("clear")
+#endif
 
 
 #define MAX_USERNAME 20
 #define MAX_PASSWORD 20
 #define MAX_PATH_LEN 200
 #define MAX_MAP_NAME 10
+
+
 
 
 // TODO: user account struct
@@ -67,6 +77,7 @@ int main()
     // read_maps(m);
     // print_map_data(m[0]);
 
+    CLEAR_SCREEN();
     read_maps(m);
     main_game_loop(m[0]);
 
@@ -631,8 +642,7 @@ int main_game_loop(MAZE_MAP map)
                 }
             }
 
-            // TODO: CLEAR SCREEN
-            puts("\n");
+            CLEAR_SCREEN();
             print_single_map(map);
         }
         else if (ch == _ESC_KEY)
