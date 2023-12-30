@@ -578,8 +578,10 @@ char *login_to_account_wrapper_io()
 
 int main_game_loop(MAZE_MAP map)
 {
-    int i, game_running = 1;
+    int i, game_running = 1, game_complete = 0, esc_pressed = 0;
+    int new_player_i, new_player_j;
     char *inventory = calloc((map.height * map.width), sizeof(char));
+    char new_block;
     int ch;
 
 
@@ -593,27 +595,51 @@ int main_game_loop(MAZE_MAP map)
         ch = _getch();
         if (ch == _ARROW_KEY) 
         {
+            new_player_i = map.player_i;
+            new_player_j = map.player_j;
+
             ch = _getch();
             switch (ch)
             {
                 case _LEFT_ARROW: 
-                    update_player_location(map.player_i, map.player_j-1, &map);
+                    new_player_j--;
                     break;
                 case _RIGHT_ARROW: 
-                    update_player_location(map.player_i, map.player_j+1, &map);
+                    new_player_j++;
                     break;
                 case _UP_ARROW: 
-                    update_player_location(map.player_i-1, map.player_j, &map);
+                    new_player_i--;
                     break;
                 case _DOWN_ARROW: 
-                    update_player_location(map.player_i+1, map.player_j, &map);
+                    new_player_i++;
                     break;                                                 
             }
+
+            new_block = map.map_array[new_player_i][new_player_j];
+            if (new_block != '1')
+            {
+                update_player_location(new_player_i, new_player_j, &map);
+                if (new_block == 'C') 
+                {
+                    game_running = 0;
+                    game_complete = 1;
+                }
+                else if (new_block == 'K')
+                {
+                    game_running = 0;
+                    game_complete = 1;     
+                }
+            }
+
+            // TODO: CLEAR SCREEN
             puts("\n");
             print_single_map(map);
         }
         else if (ch == _ESC_KEY)
+        {
             game_running = 0;
+            esc_pressed = 1;
+        }
     }
 }
 
