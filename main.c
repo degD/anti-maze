@@ -30,6 +30,8 @@
 #define MAX_MAP_NAME 10
 
 
+#define HIDE_CURSOR() printf("\033[?25l")
+#define SHOW_CURSOR() printf("\033[?25h")
 
 
 // TODO: user account struct
@@ -61,6 +63,7 @@ int get_number_of_maps();
 void save_new_map(MAZE_MAP new_map);
 void read_maps(MAZE_MAP *maps);
 void print_single_map(MAZE_MAP map);
+void print_map_character(char ch);
 void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps, int number_of_maps);
@@ -77,9 +80,13 @@ int main()
     // read_maps(m);
     // print_map_data(m[0]);
 
+    HIDE_CURSOR();
+
     CLEAR_SCREEN();
     read_maps(m);
     main_game_loop(m[0]);
+
+    SHOW_CURSOR();
 
     return 0;
 }
@@ -152,12 +159,13 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
         }
         else if (ch != ' ') 
         {
-            if (ch == 'X')
+            // TODO: MIGHT CHANGE IN FUTURE
+            if (ch == 'X' || ch == 'G')
             {
                 new_map->player_i = i;
                 new_map->player_j = j;
             }
-            new_map->map_array[i][j] = ch;
+            new_map->map_array[i][j] = 'X';
             j++;
         }
     }
@@ -259,16 +267,22 @@ void print_single_map(MAZE_MAP map)
     {
         for (j = 0; j < map.width; j++)
         {
-            switch (map.map_array[i][j])
-            {
-                case 'P': printf("P+ "); break;
-                case 'p': printf("P- "); break;
-                case 'E': printf("e+ "); break;
-                case 'e': printf("e- "); break;
-                default: printf("%c  ", map.map_array[i][j]);
-            }
+            print_map_character(map.map_array[i][j]);
         }
         puts("");
+    }
+}
+
+
+void print_map_character(char ch)
+{
+    switch (ch)
+    {
+        case 'P': printf("P+ "); break;
+        case 'p': printf("P- "); break;
+        case 'E': printf("e+ "); break;
+        case 'e': printf("e- "); break;
+        default: printf("%c  ", ch);
     }
 }
 
@@ -591,6 +605,7 @@ int main_game_loop(MAZE_MAP map)
 {
     int i, game_running = 1, game_complete = 0, esc_pressed = 0;
     int new_player_i, new_player_j;
+    int inventory_index = 0;
     char *inventory = calloc((map.height * map.width), sizeof(char));
     char new_block;
     int ch;
@@ -598,8 +613,9 @@ int main_game_loop(MAZE_MAP map)
 
     // TODO: clock and score calculation
 
-
+    CLEAR_SCREEN();
     print_single_map(map);
+    print_inventory(inventory, inventory_index);
 
     while (game_running)
     {
@@ -640,10 +656,13 @@ int main_game_loop(MAZE_MAP map)
                     game_running = 0;
                     game_complete = 1;     
                 }
+                else if (new_block != '0')
+                    inventory[inventory_index++] = new_block;
             }
 
             CLEAR_SCREEN();
             print_single_map(map);
+            print_inventory(inventory, inventory_index);
         }
         else if (ch == _ESC_KEY)
         {
@@ -651,6 +670,8 @@ int main_game_loop(MAZE_MAP map)
             esc_pressed = 1;
         }
     }
+
+    free(inventory);
 }
 
 
@@ -675,6 +696,18 @@ int update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map)
         map->player_i = new_player_i;
         map->player_j = new_player_j;
         map->map_array[map->player_i][map->player_j] = 'X';
+    }
+}
+
+
+void print_inventory(char *inventory, int inventory_length)
+{
+    int i;
+    puts("Collected sub-atomic particles:");
+    for (i = 0; i < inventory_length; i++)
+    {
+        print_map_character(inventory[i]);
+        printf(" ");
     }
 }
 
