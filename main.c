@@ -9,6 +9,9 @@
 #define MAX_MAP_NAME 10
 
 
+// TODO: user account struct
+
+
 typedef struct maze_map 
 {
     int height, width;
@@ -545,5 +548,8 @@ int main_game_loop(MAZE_MAP map)
     int i;
     char *inventory = calloc((map.height * map.width), sizeof(char));
 
-    
+    // TODO: clock and score calculation
 }
+
+
+// TODO: auto-play mode
