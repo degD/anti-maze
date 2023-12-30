@@ -3,6 +3,19 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include <conio.h>
+#define _ARROW_KEY 224
+#define _LEFT_ARROW 75
+#define _DOWN_ARROW 80
+#define _RIGHT_ARROW 77
+#define _UP_ARROW 72
+#define _ESC_KEY 27
+#define _CTRL_C_KEY 3
+#endif 
+// TODO: Also add linux compatibility
+
+
 #define MAX_USERNAME 20
 #define MAX_PASSWORD 20
 #define MAX_PATH_LEN 200
@@ -45,19 +58,13 @@ MAZE_MAP initialize_new_map(int height, int width);
 
 int main()
 {
-    int n;
-    MAZE_MAP m[10], t;
+    MAZE_MAP m[10];
 
-    puts("TEST FOR READING MAP FILES...");
-    printf("Currently, there are %d maps.\n", get_number_of_maps());
-
-    import_map_from_file("examplemap1.dat", &t);
-    save_new_map(t);
-
-    n = get_number_of_maps();
+    import_map_from_file("examplemap1.dat", &m[0]);
+    save_new_map(m[0]);
     read_maps(m);
-    puts("Read maps.dat file.");
-    print_single_map(m[0]);
+    printf("%d, %d\n", m[0].player_i, m[0].player_j);
+    // main_game_loop(m[0]);
 
     return 0;
 }
@@ -126,6 +133,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
             {
                 new_map->player_i = i;
                 new_map->player_j = j;
+                printf("%d, %d\n", new_map->player_i, new_map->player_j);
             }
             new_map->map_array[i][j] = ch;
             j++;
@@ -553,14 +561,66 @@ int main_game_loop(MAZE_MAP map)
 {
     int i, game_running = 1;
     char *inventory = calloc((map.height * map.width), sizeof(char));
+    int ch;
+
 
     // TODO: clock and score calculation
 
+
+    print_single_map(map);
+
     while (game_running)
     {
-        print_single_map(map);
+        ch = _getch();
+        if (ch == _ARROW_KEY) 
+        {
+            ch = _getch();
+            switch (ch)
+            {
+                case _LEFT_ARROW: 
+                    update_player_location(map.player_i, map.player_j-1, &map);
+                    break;
+                case _RIGHT_ARROW: 
+                    update_player_location(map.player_i, map.player_j+1, &map);
+                    break;
+                case _UP_ARROW: 
+                    update_player_location(map.player_i-1, map.player_j, &map);
+                    break;
+                case _DOWN_ARROW: 
+                    update_player_location(map.player_i+1, map.player_j, &map);
+                    break;                                                 
+            }
+            puts("\n");
+            print_single_map(map);
+        }
+        else if (ch == _ESC_KEY)
+            game_running = 0;
     }
 }
 
+
+// Return 0 if given indexes are out of map boundaries. 
+// Return 1 otherwise.
+int check_map_boundaries(int i, int j, MAZE_MAP map)
+{
+
+    if ((i < 0 || i >= map.height) || (j < 0 || j >= map.width))
+        return 0;
+    return 1;
+}
+
+
+// Update player indexes (location) on map. Only applicable when new indexes are 
+// not out of the map boundaries.
+int update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map)
+{
+    if (check_map_boundaries(new_player_i, new_player_j, *map)) 
+    {
+        map->map_array[map->player_i][map->player_j] = '0';
+        map->player_i = new_player_i;
+        map->player_j = new_player_j;
+        map->map_array[map->player_i][map->player_j] = 'X';
+    }
+}
 
 // TODO: auto-play mode
