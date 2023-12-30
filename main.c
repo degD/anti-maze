@@ -32,6 +32,7 @@
 
 #define HIDE_CURSOR() printf("\033[?25l")
 #define SHOW_CURSOR() printf("\033[?25h")
+#define MIN_INT(a, b) (((a) < (b)) ? (a) : (b))
 
 
 // TODO: user account struct
@@ -68,6 +69,12 @@ void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps, int number_of_maps);
 MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
+
+void print_inventory(char *inventory, int inventory_length);
+void print_inventory(char *inventory, int inventory_length);
+int check_map_boundaries(int i, int j, MAZE_MAP map);
+int main_game_loop(MAZE_MAP map);
+int get_number_of_antimatter(char *inventory, int inventory_length);
 
 
 int main()
@@ -603,9 +610,10 @@ char *login_to_account_wrapper_io()
 
 int main_game_loop(MAZE_MAP map)
 {
-    int i, game_running = 1, game_complete = 0, esc_pressed = 0;
+    int i, game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
     int new_player_i, new_player_j;
     int inventory_index = 0;
+    int number_of_antimatter;
     char *inventory = calloc((map.height * map.width), sizeof(char));
     char new_block;
     int ch;
@@ -654,7 +662,7 @@ int main_game_loop(MAZE_MAP map)
                 else if (new_block == 'K')
                 {
                     game_running = 0;
-                    game_complete = 1;     
+                    game_lost = 1;     
                 }
                 else if (new_block != '0')
                     inventory[inventory_index++] = new_block;
@@ -671,7 +679,15 @@ int main_game_loop(MAZE_MAP map)
         }
     }
 
+    number_of_antimatter = get_number_of_antimatter(inventory, inventory_index);
     free(inventory);
+
+    if (game_complete)
+        return number_of_antimatter;
+    if (game_lost)
+        return -1;
+    if (esc_pressed)
+        return -2;
 }
 
 
@@ -710,5 +726,35 @@ void print_inventory(char *inventory, int inventory_length)
         printf(" ");
     }
 }
+
+
+int get_number_of_antimatter(char *inventory, int inventory_length)
+{
+    int i, num_of_p_minus = 0, num_of_e_plus = 0;
+
+
+    for (i = 0; i < inventory_length; i++)
+    {
+        switch (inventory[i])
+        {
+            case 'P': 
+                num_of_p_minus--;
+                break;
+            case 'p':
+                num_of_p_minus++;
+                break;
+            case 'E':
+                num_of_e_plus++;
+                break;
+            case 'e':
+                num_of_e_plus--;
+                break;
+        }
+    }
+
+
+    return MIN_INT(num_of_p_minus, num_of_e_plus);
+}
+
 
 // TODO: auto-play mode
