@@ -538,3 +538,12 @@ char *login_to_account_wrapper_io()
     // Return the username of user.
     return username;
 }
+
+
+int main_game_loop(MAZE_MAP map)
+{
+    int i;
+    char *inventory = calloc((map.height * map.width), sizeof(char));
+
+    
+}
