@@ -61,12 +61,14 @@ int main()
 {
     MAZE_MAP m[10];
 
-    import_map_from_file("examplemap1.dat", &m[0]);
-    print_map_data(m[0]);
-    save_new_map(m[0]);
+    // import_map_from_file("examplemap1.dat", &m[0]);
+    // print_map_data(m[0]);
+    // save_new_map(m[0]);
+    // read_maps(m);
+    // print_map_data(m[0]);
+
     read_maps(m);
-    print_map_data(m[0]);
-    // main_game_loop(m[0]);
+    main_game_loop(m[0]);
 
     return 0;
 }
