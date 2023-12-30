@@ -15,6 +15,7 @@
 typedef struct maze_map 
 {
     int height, width;
+    int player_i, player_j;
     char **map_array;
 } 
 MAZE_MAP;
@@ -50,8 +51,8 @@ int main()
     puts("TEST FOR READING MAP FILES...");
     printf("Currently, there are %d maps.\n", get_number_of_maps());
 
-    // import_map_from_file("examplemap1.dat", &t);
-    // save_new_map(t);
+    import_map_from_file("examplemap1.dat", &t);
+    save_new_map(t);
 
     n = get_number_of_maps();
     read_maps(m);
@@ -121,6 +122,11 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
         }
         else if (ch != ' ') 
         {
+            if (ch == 'X')
+            {
+                new_map->player_i = i;
+                new_map->player_j = j;
+            }
             new_map->map_array[i][j] = ch;
             j++;
         }
@@ -545,10 +551,15 @@ char *login_to_account_wrapper_io()
 
 int main_game_loop(MAZE_MAP map)
 {
-    int i;
+    int i, game_running = 1;
     char *inventory = calloc((map.height * map.width), sizeof(char));
 
     // TODO: clock and score calculation
+
+    while (game_running)
+    {
+        print_single_map(map);
+    }
 }
 
 
