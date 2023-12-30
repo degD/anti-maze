@@ -33,6 +33,7 @@
 #define HIDE_CURSOR() printf("\033[?25l")
 #define SHOW_CURSOR() printf("\033[?25h")
 #define MIN_INT(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX_INT(a, b) (((a) > (b)) ? (a) : (b))
 
 
 // TODO: user account struct
@@ -70,15 +71,17 @@ void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps, int number_of_maps);
 MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
 
-void print_inventory(char *inventory, int inventory_length);
+void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map);
 void print_inventory(char *inventory, int inventory_length);
 int check_map_boundaries(int i, int j, MAZE_MAP map);
 int main_game_loop(MAZE_MAP map);
 int get_number_of_antimatter(char *inventory, int inventory_length);
+void print_game_over_screen(int status, int seconds_elapsed);
 
 
 int main()
 {
+    int status;
     MAZE_MAP m[10];
 
     // import_map_from_file("examplemap1.dat", &m[0]);
@@ -89,9 +92,9 @@ int main()
 
     HIDE_CURSOR();
 
-    CLEAR_SCREEN();
     read_maps(m);
-    main_game_loop(m[0]);
+    status = main_game_loop(m[0]);
+    print_game_over_screen(status, 0);
 
     SHOW_CURSOR();
 
@@ -610,7 +613,7 @@ char *login_to_account_wrapper_io()
 
 int main_game_loop(MAZE_MAP map)
 {
-    int i, game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
+    int game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
     int new_player_i, new_player_j;
     int inventory_index = 0;
     int number_of_antimatter;
@@ -688,6 +691,11 @@ int main_game_loop(MAZE_MAP map)
         return -1;
     if (esc_pressed)
         return -2;
+    // TODO: ADD TIMEOUT 'return -3'
+
+
+    // Return '-4' when exiting in an unexpected way.
+    return -4;
 }
 
 
@@ -704,7 +712,7 @@ int check_map_boundaries(int i, int j, MAZE_MAP map)
 
 // Update player indexes (location) on map. Only applicable when new indexes are 
 // not out of the map boundaries.
-int update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map)
+void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map)
 {
     if (check_map_boundaries(new_player_i, new_player_j, *map)) 
     {
@@ -752,8 +760,26 @@ int get_number_of_antimatter(char *inventory, int inventory_length)
         }
     }
 
-
+    num_of_p_minus = MAX_INT(num_of_p_minus, 0);
+    num_of_e_plus = MAX_INT(num_of_e_plus, 0);
     return MIN_INT(num_of_p_minus, num_of_e_plus);
+}
+
+
+void print_game_over_screen(int status, int seconds_elapsed)
+{
+    int score = 0;
+
+    CLEAR_SCREEN();
+    if (status >= 0)
+    {
+        printf("Congratulation! You managed to finish the game.\n");
+        printf("Seconds elapsed: %d\n", seconds_elapsed);
+        printf("Number of antimatter atoms produced: %d\n", status);
+        printf("Score: %d\n", score);
+    }
+    
+    // TODO: Add other game ending status codes
 }
 
 
