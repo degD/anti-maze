@@ -37,10 +37,15 @@
 #define MAX_INT(a, b) (((a) > (b)) ? (a) : (b)) // Return the maximum of a and b
 
 
-// TODO: user account struct
+// Struct to hold player password and username.
+typedef struct player
+{
+    char *username, *password;
+}
+PLAYER;
 
 
-// Structure to represent game maps. Contains height and width of the map,
+// Struct to represent game maps. Contains height and width of the map,
 // along with its 2D-Array representation. 'player_i' and 'player_j' also represents
 // the current location of the player.
 typedef struct maze_map 
@@ -53,13 +58,12 @@ MAZE_MAP;
 
 
 void login_screen_io(char *username, char *password, int *new_login);
-char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_ptr);
-void create_new_account(char *username, char *password, FILE *credentials_file_ptr);
-FILE *open_credentials_file();
-void print_credentials_debug(char ***credentials, int number_of_accounts);
-void free_credentials(char ***credentials, int number_of_accounts);
-int search_username(char ***credentials, int number_of_accounts, char *username);
-int check_password(char ***credentials, int number_of_accounts, int username_index, char *password);
+PLAYER *read_credentials_file(int *number_of_accounts);
+void create_new_account(char *username, char *password);
+void print_credentials_debug(PLAYER *credentials, int number_of_accounts);
+void free_credentials(PLAYER *credentials, int number_of_accounts);
+int search_username(PLAYER *credentials, int number_of_accounts, char *username);
+int check_password(PLAYER *credentials, int number_of_accounts, int username_index, char *password);
 void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
@@ -114,20 +118,36 @@ int main()
 
     // SHOW_CURSOR();
 
-    int *top;
-    char **u_top;
-    int s = 218;
-    char *name = "sonic";
+    // int *top;
+    // char **u_top;
+    // int s = 218;
+    // char *name = "sonic";
 
-    top = init_top_scores_array();
-    u_top = init_top_score_usernames_array();
+    // top = init_top_scores_array();
+    // u_top = init_top_score_usernames_array();
 
-    read_top_scores(top, u_top);
-    update_top_scores(top, u_top, s, name);
+    // read_top_scores(top, u_top);
+    // update_top_scores(top, u_top, s, name);
     // print_scores(top, u_top);
     // free_score_arrays(top, u_top);
 
 
+    int n;
+    char username[MAX_USERNAME] = "gandalf", password[MAX_USERNAME] = "xyz5";
+    PLAYER *arr;
+
+    // fp = open_credentials_file();
+    // arr = read_credentials_file(&n, fp);
+    // print_credentials_debug(arr, n);
+    // free_credentials(arr, n);
+    // fclose(fp);
+
+    create_new_account(username, password);
+
+    arr = read_credentials_file(&n);
+    printf("%d\n", n);
+    print_credentials_debug(arr, n);
+    // free_credentials(arr, n);
 
     return 0;
 }
@@ -388,7 +408,6 @@ void login_screen_io(char *username, char *password, int *new_login)
 {
     *new_login = 0;
 
-
     // Ask username and password.
     printf("Username: ");
     fgets(username, MAX_USERNAME, stdin);
@@ -397,7 +416,6 @@ void login_screen_io(char *username, char *password, int *new_login)
 
     username[strcspn(username, "\n")] = '\0';
     password[strcspn(password, "\n")] = '\0';
-
 
     // When no username and password given, ask user to create
     // a new account.
@@ -419,26 +437,28 @@ void login_screen_io(char *username, char *password, int *new_login)
 
 // Read account information from credentials file 'credentials_file_ptr'. 
 // Allocate space for an array to store accounts.
-char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_ptr)
+PLAYER *read_credentials_file(int *number_of_accounts)
 {
-    int i;
-    char ch, ***credentials;
-    *number_of_accounts = 0; 
+    int i = 0;
+    PLAYER *credentials;
+    FILE *credentials_file_ptr;
 
-    
-    // Count number of lines (accounts). Then rewind for reading.
-    while ((ch = fgetc(credentials_file_ptr)) != EOF) 
+    credentials_file_ptr = fopen("login.dat", "rb");
+    if (credentials_file_ptr == NULL)
     {
-        if (ch == '\n')
-        {
-            *number_of_accounts += 1;
-        }
-    }
-    rewind(credentials_file_ptr);
+        // Create the file if it does not exist.
+        credentials_file_ptr = fopen("login.dat", "wb");
+        fwrite(&i, sizeof(int), 1, credentials_file_ptr);
+        fclose(credentials_file_ptr);
 
+        credentials_file_ptr = fopen("login.dat", "rb");
+    }
+
+    // Read number of accounts.
+    fread(number_of_accounts, sizeof(int), 1, credentials_file_ptr);
 
     // Allocate space for credentials array. Then read account data.
-    credentials = (char ***) calloc(*number_of_accounts, sizeof(char **));
+    credentials = (PLAYER *) calloc(*number_of_accounts, sizeof(PLAYER));
     if (credentials == NULL)
     {
         puts("Not enough memory, exiting...");
@@ -446,81 +466,77 @@ char ***read_credentials_file(int *number_of_accounts, FILE *credentials_file_pt
     }
     for (i = 0; i < *number_of_accounts; i++) 
     {
-        credentials[i] = (char **) calloc(2, sizeof(char *));
-        credentials[i][0] = (char *) calloc(MAX_USERNAME, sizeof(char));
-        credentials[i][1] = (char *) calloc(MAX_PASSWORD, sizeof(char));
+        credentials[i].username = (char *) calloc(MAX_USERNAME, sizeof(char));
+        credentials[i].password = (char *) calloc(MAX_PASSWORD, sizeof(char));
 
-        fscanf(credentials_file_ptr, "%s %s", credentials[i][0], credentials[i][1]);
+        fread(credentials[i].username, sizeof(char), MAX_USERNAME, credentials_file_ptr);
+        fread(credentials[i].password, sizeof(char), MAX_PASSWORD, credentials_file_ptr);
     }
 
-
     // Return accounts.
+    fclose(credentials_file_ptr);
     return credentials;
 }
 
 
-// Create a new account by appending to 'credentials_file_ptr'. 
-// Assumes 'credentials_file_ptr' is already opened.
-void create_new_account(char *username, char *password, FILE *credentials_file_ptr)
+// Create a new account by appending to 'login.dat' file. 
+void create_new_account(char *username, char *password)
 {
-    if (credentials_file_ptr == NULL)
-    {
-        puts("Credentials file is not accessible. Have you opened the file?");
-        return;
-    }
-
-    fprintf(credentials_file_ptr, "%s %s\n", username, password);
-}
-
-
-// Open credentials file for both reading and writing.
-FILE *open_credentials_file()
-{
+    int number_of_accounts;
     FILE *credentials_file_ptr;
 
-    credentials_file_ptr = fopen("login.dat", "a+b");
-    if (credentials_file_ptr == NULL)
-    {
-        puts("Credentials file is not accessible.");
-    }
+    // Update number of accounts.
+    credentials_file_ptr = fopen("login.dat", "r+b");
 
-    return credentials_file_ptr;
+    fread(&number_of_accounts, sizeof(int), 1, credentials_file_ptr);
+    rewind(credentials_file_ptr);
+    number_of_accounts++;
+    fwrite(&number_of_accounts, sizeof(int), 1, credentials_file_ptr);
+
+    fclose(credentials_file_ptr);
+
+
+    // Add new account.
+    credentials_file_ptr = fopen("login.dat", "ab");
+
+    fwrite(username, sizeof(char), MAX_USERNAME, credentials_file_ptr);
+    fwrite(password, sizeof(char), MAX_PASSWORD, credentials_file_ptr);
+
+    fclose(credentials_file_ptr);
 }
 
 
 // Print account information. Only for DEBUG purpose.
-void print_credentials_debug(char ***credentials, int number_of_accounts)
+void print_credentials_debug(PLAYER *credentials, int number_of_accounts)
 {
     int i;
 
     puts("Printing accounts:");
     for (i = 0; i < number_of_accounts; i++)
     {
-        printf("%d %s %s\n", i, credentials[i][0], credentials[i][1]);
+        printf("%d %s %s\n", i+1, credentials[i].username, credentials[i].password);
     }
     puts("Printing accounts complete...");
 }
 
 
 // Free credentials array.
-void free_credentials(char ***credentials, int number_of_accounts)
+void free_credentials(PLAYER *credentials, int number_of_accounts)
 {
     int i;
 
     for (i = 0; i < number_of_accounts; i++)
     {
-        free(credentials[i][0]);
-        free(credentials[i][1]);
-        free(credentials[i]);
+        free(credentials[i].username);
+        free(credentials[i].password);
     } 
-    
     free(credentials);
 }
 
 
 // Search the credentials array. If username found, return its index.
 // Otherwise return -1.
-int search_username(char ***credentials, int number_of_accounts, char *username)
+int search_username(PLAYER *credentials, int number_of_accounts, char *username)
 {
     int i = 0, is_found = 0;
 
@@ -528,7 +544,7 @@ int search_username(char ***credentials, int number_of_accounts, char *username)
     // Search trough the credentials array.
     while ((i < number_of_accounts) && (is_found == 0))
     {
-        if (strcmp(credentials[i][0], username) == 0)
+        if (strcmp(credentials[i].username, username) == 0)
         {
             is_found = 1;
         }
@@ -550,11 +566,11 @@ int search_username(char ***credentials, int number_of_accounts, char *username)
 
 
 // If passwords match, return 1. If not, return 0.
-int check_password(char ***credentials, int number_of_accounts, int username_index, char *password)
+int check_password(PLAYER *credentials, int number_of_accounts, int username_index, char *password)
 {
     int i = username_index;
 
-    if (strcmp(credentials[i][1], password) == 0)
+    if (strcmp(credentials[i].password, password) == 0)
     {
         return 1;
     }
@@ -580,20 +596,18 @@ void new_account_io(char *new_username, char *new_password)
 
 // Ask user to enter account informations. Warn user when entered wrong/incomplete information. 
 // Create new account for user. Modify accounts file according to operations.
-// Overall wrapper for account and login operations.
+// Overall, wrapper for account and login operations.
 char *login_to_account_wrapper_io()
 {
     char *username = calloc(MAX_USERNAME, sizeof(char));
     char *password = calloc(MAX_PASSWORD, sizeof(char));
-    char ***credentials;
+    PLAYER *credentials;
     int new_login, number_of_accounts, login_successful = 0;
     int username_index;
-    FILE *credentials_file_ptr;
 
 
     // Read credentials file.
-    credentials_file_ptr = open_credentials_file();
-    credentials = read_credentials_file(&number_of_accounts, credentials_file_ptr);
+    credentials = read_credentials_file(&number_of_accounts);
 
 
     // Login loop. Repeat until user manages to login with either an existing account or by
@@ -635,7 +649,7 @@ char *login_to_account_wrapper_io()
                 if (search_username(credentials, number_of_accounts, username) == -1)
                 {
                     puts("Creating new account...");
-                    create_new_account(username, password, credentials_file_ptr);
+                    create_new_account(username, password);
                     login_successful = 1;
                 }
                 else 
@@ -655,7 +669,6 @@ char *login_to_account_wrapper_io()
 
 
     // Close the file and free allocated arrays.
-    fclose(credentials_file_ptr);
     free_credentials(credentials, number_of_accounts);
     free(password);
 
