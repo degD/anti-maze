@@ -30,15 +30,18 @@
 #define MAX_MAP_NAME 10
 
 
-#define HIDE_CURSOR() printf("\033[?25l")
-#define SHOW_CURSOR() printf("\033[?25h")
-#define MIN_INT(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX_INT(a, b) (((a) > (b)) ? (a) : (b))
+#define HIDE_CURSOR() printf("\033[?25l")       // Hide console cursor.
+#define SHOW_CURSOR() printf("\033[?25h")       // Show console cursor.
+#define MIN_INT(a, b) (((a) < (b)) ? (a) : (b)) // Return the minimum of a and b
+#define MAX_INT(a, b) (((a) > (b)) ? (a) : (b)) // Return the maximum of a and b
 
 
 // TODO: user account struct
 
 
+// Structure to represent game maps. Contains height and width of the map,
+// along with its 2D-Array representation. 'player_i' and 'player_j' also represents
+// the current location of the player.
 typedef struct maze_map 
 {
     int height, width;
@@ -60,7 +63,7 @@ void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
 void print_map_data(MAZE_MAP map);
-int import_map_from_file(char *path, MAZE_MAP *new_map);
+int import_map_from_file(const char *path, MAZE_MAP *new_map);
 int get_number_of_maps();
 void save_new_map(MAZE_MAP new_map);
 void read_maps(MAZE_MAP *maps);
@@ -102,12 +105,16 @@ int main()
 }
 
 
+// Print MAZE_MAP data other than the 2D-Array. It includes height, width, and
+// player indexes, respectively. Use 'print_single_map' and 'print_maps' functions
+// to print the 2D-Arrays.
 void print_map_data(MAZE_MAP map)
 {
     printf("%d, %d, %d, %d\n", map.height, map.width, map.player_i, map.player_j);
 }
 
 
+// Allocate memory for 2D-Array. Define map height and width. Define player indexes.
 MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j)
 {
     int i;
@@ -126,7 +133,10 @@ MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j)
 }
 
 
-int import_map_from_file(char *path, MAZE_MAP *new_map)
+// Maps are read from a file called 'maps.bin'. To play with a new map, one should first
+// import it. Reads the file of the map from the given path, and returns the map as the 
+// MAZE_MAP struct. To save the map for future use, please use 'save_new_map' function.
+int import_map_from_file(const char *path, MAZE_MAP *new_map)
 {
     FILE *new_map_file_ptr = fopen(path, "r");
     int i, j;
@@ -158,7 +168,7 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
     *new_map = initialize_new_map(i+1, j, 0, 0);
 
 
-    // Read characters from the map and convert it to the array.
+    // Read characters from the map file and transform it into an array.
     i = j = 0;
     while ((ch = fgetc(new_map_file_ptr)) != EOF)
     {
@@ -187,6 +197,8 @@ int import_map_from_file(char *path, MAZE_MAP *new_map)
 }
 
 
+// Read 'maps.bin' file and return number of saved maps.
+// Return '0' if the file doesn't exist.
 int get_number_of_maps()
 {
     int number_of_maps = 0;
@@ -198,11 +210,13 @@ int get_number_of_maps()
         fclose(maps_ptr);
         return number_of_maps;
     }
-    fclose(maps_ptr);
+
     return 0;
 }
 
 
+// Save a MAZE_MAP (possibly a new, imported map) to 'maps.bin'.
+// Create 'maps.bin' if it doesn't exist.
 void save_new_map(MAZE_MAP new_map)
 {
     int i, number_of_maps;
@@ -211,6 +225,8 @@ void save_new_map(MAZE_MAP new_map)
     if (maps_ptr == NULL)
     {
         // Create the file if it does not exist.
+        // 'maps.bin' consists of a number at the top, indicating number of maps saved.
+        // And after a new line, lines that hold information about the maps. 
         maps_ptr = fopen("maps.bin", "w");
         fputs("0", maps_ptr);
         fclose(maps_ptr);
@@ -219,12 +235,13 @@ void save_new_map(MAZE_MAP new_map)
     }
 
     
+    // Update number of maps in the file.
     number_of_maps = get_number_of_maps();
     fprintf(maps_ptr, "%d\n", number_of_maps+1);
     fclose(maps_ptr);
 
 
-    // Saving MAZE_MAP struct by appending to 'maps.bin' file.
+    // Save MAZE_MAP struct by appending it to the 'maps.bin' file.
     maps_ptr = fopen("maps.bin", "ab");
 
     fwrite(&new_map.height, sizeof(int), 1, maps_ptr);
@@ -239,6 +256,7 @@ void save_new_map(MAZE_MAP new_map)
 }
 
 
+// Read maps from 'maps.bin'. Copies them to a MAZE_MAP array. 
 void read_maps(MAZE_MAP *maps)
 {
     int i, h, number_of_maps;
@@ -250,8 +268,10 @@ void read_maps(MAZE_MAP *maps)
         return;
     }
 
-
+    // Get number of maps. This step is important to prevent incorrect readings.
     fscanf(maps_ptr, "%d ", &number_of_maps);
+
+    // Read the map structures. 
     for (i = 0; i < number_of_maps; i++)
     {
         fread(&maps[i].height, sizeof(int), 1, maps_ptr);
@@ -269,6 +289,7 @@ void read_maps(MAZE_MAP *maps)
 }
 
 
+// Print 2D-Array of a single map.
 void print_single_map(MAZE_MAP map)
 {
     int i, j;
@@ -284,6 +305,8 @@ void print_single_map(MAZE_MAP map)
 }
 
 
+// Print map representation of a char. If it doesn't have
+// a special representation, print the char itself. 
 void print_map_character(char ch)
 {
     switch (ch)
@@ -297,6 +320,7 @@ void print_map_character(char ch)
 }
 
 
+// Print multiple maps from a MAZE_MAP array.
 void print_maps(MAZE_MAP *maps, int number_of_maps)
 {
     int i; 
@@ -312,6 +336,7 @@ void print_maps(MAZE_MAP *maps, int number_of_maps)
 }
 
 
+// Free MAZE_MAP array.
 void free_map(MAZE_MAP map)
 {
     int i;
@@ -320,6 +345,7 @@ void free_map(MAZE_MAP map)
 }
 
 
+// Free arrays of the maps from a MAZE_MAP array.
 void free_maps_array(MAZE_MAP *maps, int number_of_maps)
 {
     int i;
@@ -724,6 +750,7 @@ void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map)
 }
 
 
+// Print the inventory array and items in it.
 void print_inventory(char *inventory, int inventory_length)
 {
     int i;
