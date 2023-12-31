@@ -77,14 +77,16 @@ MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
 void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map);
 void print_inventory(char *inventory, int inventory_length);
 int check_map_boundaries(int i, int j, MAZE_MAP map);
-int main_game_loop(MAZE_MAP map);
+int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed);
 int get_number_of_antimatter(char *inventory, int inventory_length);
-void print_game_over_screen(int status, int seconds_elapsed);
+void print_game_over_screen(int status, int seconds_elapsed, int total_time);
+int calculate_total_seconds(MAZE_MAP map);
+int calculate_score(int status, int seconds_elapsed, int total_time);
 
 
 int main()
 {
-    int status;
+    int status, total_time, elapsed, score;
     MAZE_MAP m[10];
 
     // import_map_from_file("examplemap1.dat", &m[0]);
@@ -96,8 +98,10 @@ int main()
     HIDE_CURSOR();
 
     read_maps(m);
-    status = main_game_loop(m[0]);
-    print_game_over_screen(status, 0);
+    total_time = calculate_total_seconds(m[0]);
+    status = main_game_loop(m[0], total_time, &elapsed);
+    score = calculate_score(status, elapsed, total_time);
+    print_game_over_screen(status, 0, score);
 
     SHOW_CURSOR();
 
@@ -637,7 +641,7 @@ char *login_to_account_wrapper_io()
 }
 
 
-int main_game_loop(MAZE_MAP map)
+int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
 {
     int game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
     int new_player_i, new_player_j;
@@ -796,10 +800,8 @@ int get_number_of_antimatter(char *inventory, int inventory_length)
 }
 
 
-void print_game_over_screen(int status, int seconds_elapsed)
+void print_game_over_screen(int status, int seconds_elapsed, int score)
 {
-    int score = 0;
-
     CLEAR_SCREEN();
     if (status >= 0)        // Game complete.
     {
@@ -821,9 +823,16 @@ void print_game_over_screen(int status, int seconds_elapsed)
 
 
 // Return how many seconds the player will have to finish the game.
-int calculate_total_seconds(int height, int width)
+int calculate_total_seconds(MAZE_MAP map)
 {
-    return (height * width);
+    return (map.height * map.width);
+}
+
+
+// Calculate the score of the victor player.
+int calculate_score(int status, int seconds_elapsed, int total_time)
+{
+    return (status + 1) * (total_time - seconds_elapsed);
 }
 
 // TODO: auto-play mode
