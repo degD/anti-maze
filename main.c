@@ -99,58 +99,19 @@ void free_score_arrays(int *top_scores, char **top_score_usernames);
 
 int main()
 {
-    // int status, total_time, elapsed, score;
-    // MAZE_MAP m[10];
+    int number_of_maps;
+    MAZE_MAP *maps, m;
 
-    // import_map_from_file("examplemap1.dat", &m[0]);
-    // print_map_data(m[0]);
-    // save_new_map(m[0]);
-    // read_maps(m);
-    // print_map_data(m[0]);
+    number_of_maps = get_number_of_maps();
+    maps = calloc(number_of_maps, sizeof(MAZE_MAP));
 
-    // HIDE_CURSOR();
+    // import_map_from_file("examplemap1.dat", &m);
+    // print_single_map(m);
+    // save_new_map(m);
 
-    // read_maps(m);
-    // total_time = calculate_total_seconds(m[0]);
-    // status = main_game_loop(m[0], total_time, &elapsed);
-    // score = calculate_score(status, elapsed, total_time);
-    // print_game_over_screen(status, 0, score);
-
-    // SHOW_CURSOR();
-
-    // int *top;
-    // char **u_top;
-    // int s = 218;
-    // char *name = "sonic";
-
-    // top = init_top_scores_array();
-    // u_top = init_top_score_usernames_array();
-
-    // read_top_scores(top, u_top);
-    // update_top_scores(top, u_top, s, name);
-    // print_scores(top, u_top);
-    // free_score_arrays(top, u_top);
-
-
-    // int n;
-    // char username[MAX_USERNAME] = "gandalf", password[MAX_USERNAME] = "xyz5";
-    // PLAYER *arr;
-
-    // fp = open_credentials_file();
-    // arr = read_credentials_file(&n, fp);
-    // print_credentials_debug(arr, n);
-    // free_credentials(arr, n);
-    // fclose(fp);
-
-    // create_new_account(username, password);
-
-    // arr = read_credentials_file(&n);
-    // printf("%d\n", n);
-    // print_credentials_debug(arr, n);
-    // free_credentials(arr, n);
-
-    char *username;
-    username = login_to_account_wrapper_io();
+    read_maps(maps);
+    print_maps(maps, number_of_maps);
+    free_maps_array(maps, number_of_maps);
 
     return 0;
 }
@@ -235,8 +196,10 @@ int import_map_from_file(const char *path, MAZE_MAP *new_map)
             {
                 new_map->player_i = i;
                 new_map->player_j = j;
+                new_map->map_array[i][j] = 'X';
             }
-            new_map->map_array[i][j] = 'X';
+            else 
+                new_map->map_array[i][j] = ch;
             j++;
         }
     }
@@ -248,29 +211,27 @@ int import_map_from_file(const char *path, MAZE_MAP *new_map)
 }
 
 
-// Read 'maps.bin' file and return number of saved maps.
-// Return '0' if the file doesn't exist.
 int get_number_of_maps()
 {
-    int number_of_maps = 0;
+    int number_of_maps;
     FILE *maps_ptr = fopen("maps.bin", "rb");
 
-    if (maps_ptr != NULL)
+    if (maps_ptr == NULL)
     {
-        fscanf(maps_ptr, "%d ", &number_of_maps);
-        fclose(maps_ptr);
-        return number_of_maps;
+        return 0;
     }
 
-    return 0;
-}
+    fread(&number_of_maps, sizeof(int), 1, maps_ptr);
+    fclose(maps_ptr);
 
+    return number_of_maps;
+}
 
 // Save a MAZE_MAP (possibly a new, imported map) to 'maps.bin'.
 // Create 'maps.bin' if it doesn't exist.
 void save_new_map(MAZE_MAP new_map)
 {
-    int i, number_of_maps;
+    int i, number_of_maps = 0;
     FILE *maps_ptr = fopen("maps.bin", "r+b");
 
     if (maps_ptr == NULL)
@@ -278,8 +239,8 @@ void save_new_map(MAZE_MAP new_map)
         // Create the file if it does not exist.
         // 'maps.bin' consists of a number at the top, indicating number of maps saved.
         // And after a new line, lines that hold information about the maps. 
-        maps_ptr = fopen("maps.bin", "w");
-        fputs("0", maps_ptr);
+        maps_ptr = fopen("maps.bin", "wb");
+        fwrite(&number_of_maps, sizeof(int), 1, maps_ptr);
         fclose(maps_ptr);
 
         maps_ptr = fopen("maps.bin", "r+b");
@@ -287,8 +248,11 @@ void save_new_map(MAZE_MAP new_map)
 
     
     // Update number of maps in the file.
-    number_of_maps = get_number_of_maps();
-    fprintf(maps_ptr, "%d\n", number_of_maps+1);
+    fread(&number_of_maps, sizeof(int), 1, maps_ptr);
+    rewind(maps_ptr);
+    number_of_maps++;
+    fwrite(&number_of_maps, sizeof(int), 1, maps_ptr);
+
     fclose(maps_ptr);
 
 
@@ -319,8 +283,8 @@ void read_maps(MAZE_MAP *maps)
         return;
     }
 
-    // Get number of maps. This step is important to prevent incorrect readings.
-    fscanf(maps_ptr, "%d ", &number_of_maps);
+    // Get number of maps.
+    fread(&number_of_maps, sizeof(int), 1, maps_ptr);
 
     // Read the map structures. 
     for (i = 0; i < number_of_maps; i++)
@@ -376,7 +340,7 @@ void print_maps(MAZE_MAP *maps, int number_of_maps)
 {
     int i; 
 
-    puts("PRINTING MAZE MAPS\n\n");
+    puts("PRINTING MAZE MAPS\n");
 
     for (i = 0; i < number_of_maps; i++)
     {
