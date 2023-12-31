@@ -656,6 +656,9 @@ int main_game_loop(MAZE_MAP map)
 
     while (game_running)
     {
+        // TODO: Use thread for user input.
+        // TODO: Use thread for time.
+
         ch = _getch();
         if (ch == _ARROW_KEY) 
         {
@@ -809,5 +812,11 @@ void print_game_over_screen(int status, int seconds_elapsed)
     // TODO: Add other game ending status codes
 }
 
+
+// Return how many seconds the player will have to finish the game.
+int calculate_total_seconds(int height, int width)
+{
+    return (height * width);
+}
 
 // TODO: auto-play mode
