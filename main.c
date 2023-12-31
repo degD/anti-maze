@@ -132,9 +132,9 @@ int main()
     // free_score_arrays(top, u_top);
 
 
-    int n;
-    char username[MAX_USERNAME] = "gandalf", password[MAX_USERNAME] = "xyz5";
-    PLAYER *arr;
+    // int n;
+    // char username[MAX_USERNAME] = "gandalf", password[MAX_USERNAME] = "xyz5";
+    // PLAYER *arr;
 
     // fp = open_credentials_file();
     // arr = read_credentials_file(&n, fp);
@@ -142,12 +142,15 @@ int main()
     // free_credentials(arr, n);
     // fclose(fp);
 
-    create_new_account(username, password);
+    // create_new_account(username, password);
 
-    arr = read_credentials_file(&n);
-    printf("%d\n", n);
-    print_credentials_debug(arr, n);
+    // arr = read_credentials_file(&n);
+    // printf("%d\n", n);
+    // print_credentials_debug(arr, n);
     // free_credentials(arr, n);
+
+    char *username;
+    username = login_to_account_wrapper_io();
 
     return 0;
 }
