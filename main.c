@@ -88,7 +88,7 @@ void read_top_scores(int *top_scores, char **top_score_usernames);
 int *init_top_scores_array();
 char **init_top_score_usernames_array();
 int compare_new_score(int *top_scores, int score);
-void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username, int new_score_index);
+void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username);
 void print_scores(int *top_scores, char **top_score_usernames);
 void free_score_arrays(int *top_scores, char **top_score_usernames);
 
@@ -123,7 +123,7 @@ int main()
     u_top = init_top_score_usernames_array();
 
     read_top_scores(top, u_top);
-    update_top_scores(top, u_top, s, name, compare_new_score(top, s));
+    update_top_scores(top, u_top, s, name);
     // print_scores(top, u_top);
     // free_score_arrays(top, u_top);
 
@@ -911,9 +911,10 @@ int compare_new_score(int *top_scores, int new_score)
 
 // Update 'scores.txt' based on the value of new score. Insert it to correct place
 // if it is a new top score. 
-void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username, int new_score_index)
+void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username)
 {
     int i = 0, n = NUM_OF_TOP_SCORES;
+    int new_score_index = compare_new_score(top_scores, new_score);
     FILE *scores_file_ptr = fopen("scores.txt", "w");
 
     while ((i < n) && (top_scores[i] != 0))
