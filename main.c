@@ -801,15 +801,22 @@ void print_game_over_screen(int status, int seconds_elapsed)
     int score = 0;
 
     CLEAR_SCREEN();
-    if (status >= 0)
+    if (status >= 0)        // Game complete.
     {
         printf("Congratulation! You managed to finish the game.\n");
         printf("Seconds elapsed: %d\n", seconds_elapsed);
         printf("Number of antimatter atoms produced: %d\n", status);
         printf("Score: %d\n", score);
     }
-    
-    // TODO: Add other game ending status codes
+    else if (status == -1)  // Game lost.
+    {
+        printf("Game over.\nYou ran into a black hole.\nNo one really knows what happened to you.\n");
+    }
+    else if (status == -2); // ESC pressed to exit.
+    else if (status == -3)  // Timeout.
+    {
+        printf("Game over. You are too slow.\nMicro world is way faster than this.\n");
+    }
 }
 
 
