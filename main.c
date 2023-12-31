@@ -116,12 +116,18 @@ int main()
 
     int *top;
     char **u_top;
+    int s = 218;
+    char *name = "sonic";
 
     top = init_top_scores_array();
     u_top = init_top_score_usernames_array();
+
     read_top_scores(top, u_top);
-    print_scores(top, u_top);
-    free_score_arrays(top, u_top);
+    update_top_scores(top, u_top, s, name, compare_new_score(top, s));
+    // print_scores(top, u_top);
+    // free_score_arrays(top, u_top);
+
+
 
     return 0;
 }
@@ -918,7 +924,11 @@ void update_top_scores(int *top_scores, char **top_score_usernames, int new_scor
             n--;
         }
         fprintf(scores_file_ptr, "%s %d\n", top_score_usernames[i], top_scores[i]);
+        i++;
     }
+
+    if ((i < n) && (top_scores[i] == 0))
+        fprintf(scores_file_ptr, "%s %d\n", username, new_score);
 
     fclose(scores_file_ptr);
 }
