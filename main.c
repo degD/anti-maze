@@ -85,6 +85,8 @@ int calculate_total_seconds(MAZE_MAP map);
 
 int calculate_score(int status, int seconds_elapsed, int total_time);
 void read_top_scores(int *top_scores, char **top_score_usernames);
+int *init_top_scores_array();
+char **init_top_score_usernames_array();
 int compare_new_score(int *top_scores, int score);
 void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username, int new_score_index);
 void print_scores(int *top_scores, char **top_score_usernames);
@@ -93,8 +95,8 @@ void free_score_arrays(int *top_scores, char **top_score_usernames);
 
 int main()
 {
-    int status, total_time, elapsed, score;
-    MAZE_MAP m[10];
+    // int status, total_time, elapsed, score;
+    // MAZE_MAP m[10];
 
     // import_map_from_file("examplemap1.dat", &m[0]);
     // print_map_data(m[0]);
@@ -102,15 +104,24 @@ int main()
     // read_maps(m);
     // print_map_data(m[0]);
 
-    HIDE_CURSOR();
+    // HIDE_CURSOR();
 
-    read_maps(m);
-    total_time = calculate_total_seconds(m[0]);
-    status = main_game_loop(m[0], total_time, &elapsed);
-    score = calculate_score(status, elapsed, total_time);
-    print_game_over_screen(status, 0, score);
+    // read_maps(m);
+    // total_time = calculate_total_seconds(m[0]);
+    // status = main_game_loop(m[0], total_time, &elapsed);
+    // score = calculate_score(status, elapsed, total_time);
+    // print_game_over_screen(status, 0, score);
 
-    SHOW_CURSOR();
+    // SHOW_CURSOR();
+
+    int *top;
+    char **u_top;
+
+    top = init_top_scores_array();
+    u_top = init_top_score_usernames_array();
+    read_top_scores(top, u_top);
+    print_scores(top, u_top);
+    free_score_arrays(top, u_top);
 
     return 0;
 }
@@ -843,22 +854,11 @@ int calculate_score(int status, int seconds_elapsed, int total_time)
 }
 
 
-// Try to read top scores from file. Allocate arrays of memory to save
-// scores and usernames. 
+// Try to read top scores from file. Save scores and usernames.
 void read_top_scores(int *top_scores, char **top_score_usernames)
 {
-    int i, *top_scores;
-    char **top_score_usernames;
+    int i;
     FILE *scores_file_ptr = fopen("scores.txt", "r");
-
-    // Allocate memory for scores.
-    top_scores = (int *) calloc(NUM_OF_TOP_SCORES, sizeof(int));
-    top_score_usernames = (char **) calloc(NUM_OF_TOP_SCORES, sizeof(char *));
-    for (i = 0; i < NUM_OF_TOP_SCORES; i++) 
-    {
-        top_score_usernames = (char *) calloc(MAX_USERNAME, sizeof(char));
-        top_score_usernames[i][0] = '\0';
-    }
 
     if (scores_file_ptr != NULL)
     {
@@ -866,11 +866,30 @@ void read_top_scores(int *top_scores, char **top_score_usernames)
         while (!feof(scores_file_ptr))
         {   
             // Read scores until EOF.
-            fscanf("%s %d", top_score_usernames[i], top_scores[i]);
+            fscanf(scores_file_ptr, "%s %d", top_score_usernames[i], &top_scores[i]);
             i++;
         }
         fclose(scores_file_ptr);
     }
+}
+
+
+int *init_top_scores_array()
+{
+    return (int *) calloc(NUM_OF_TOP_SCORES, sizeof(int));
+}
+
+
+char **init_top_score_usernames_array()
+{
+    int i;
+    char **top_score_usernames = (char **) calloc(NUM_OF_TOP_SCORES, sizeof(char *));
+    for (i = 0; i < NUM_OF_TOP_SCORES; i++) 
+    {
+        top_score_usernames[i] = (char *) calloc(MAX_USERNAME, sizeof(char));
+        top_score_usernames[i][0] = '\0';
+    }
+    return top_score_usernames;
 }
 
 
@@ -895,10 +914,10 @@ void update_top_scores(int *top_scores, char **top_score_usernames, int new_scor
     {
         if (new_score_index == i)
         {
-            fprintf("%s %d\n", username, new_score);
+            fprintf(scores_file_ptr, "%s %d\n", username, new_score);
             n--;
         }
-        fprintf("%s %d\n", top_score_usernames[i], top_scores[i]);
+        fprintf(scores_file_ptr, "%s %d\n", top_score_usernames[i], top_scores[i]);
     }
 
     fclose(scores_file_ptr);
@@ -910,10 +929,13 @@ void print_scores(int *top_scores, char **top_score_usernames)
 {
     int i = 0;
 
+    CLEAR_SCREEN();
+
+    puts("TOP SCORES\n");
     while ((i < NUM_OF_TOP_SCORES) && (top_scores[i] != 0))
     {
-        puts("TOP SCORES\n");
         printf("%s %d\n", top_score_usernames[i], top_scores[i]);
+        i++;
     }
 }
 
