@@ -28,6 +28,7 @@
 #define MAX_PASSWORD 20
 #define MAX_PATH_LEN 200
 #define MAX_MAP_NAME 10
+#define NUM_OF_TOP_SCORES 5
 
 
 #define HIDE_CURSOR() printf("\033[?25l")       // Hide console cursor.
@@ -81,7 +82,13 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed);
 int get_number_of_antimatter(char *inventory, int inventory_length);
 void print_game_over_screen(int status, int seconds_elapsed, int total_time);
 int calculate_total_seconds(MAZE_MAP map);
+
 int calculate_score(int status, int seconds_elapsed, int total_time);
+void read_top_scores(int *top_scores, char **top_score_usernames);
+int compare_new_score(int *top_scores, int score);
+void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username, int new_score_index);
+void print_scores(int *top_scores, char **top_score_usernames);
+void free_score_arrays(int *top_scores, char **top_score_usernames);
 
 
 int main()
@@ -834,5 +841,95 @@ int calculate_score(int status, int seconds_elapsed, int total_time)
 {
     return (status + 1) * (total_time - seconds_elapsed);
 }
+
+
+// Try to read top scores from file. Allocate arrays of memory to save
+// scores and usernames. 
+void read_top_scores(int *top_scores, char **top_score_usernames)
+{
+    int i, *top_scores;
+    char **top_score_usernames;
+    FILE *scores_file_ptr = fopen("scores.txt", "r");
+
+    // Allocate memory for scores.
+    top_scores = (int *) calloc(NUM_OF_TOP_SCORES, sizeof(int));
+    top_score_usernames = (char **) calloc(NUM_OF_TOP_SCORES, sizeof(char *));
+    for (i = 0; i < NUM_OF_TOP_SCORES; i++) 
+    {
+        top_score_usernames = (char *) calloc(MAX_USERNAME, sizeof(char));
+        top_score_usernames[i][0] = '\0';
+    }
+
+    if (scores_file_ptr != NULL)
+    {
+        i = 0;
+        while (!feof(scores_file_ptr))
+        {   
+            // Read scores until EOF.
+            fscanf("%s %d", top_score_usernames[i], top_scores[i]);
+            i++;
+        }
+        fclose(scores_file_ptr);
+    }
+}
+
+
+// Return a possible index for new score. Compare this score with  
+// top scores and decide its place.
+int compare_new_score(int *top_scores, int new_score)
+{
+    int i = 0;
+    while (top_scores[i] > new_score) i++;
+    return i;
+}
+
+
+// Update 'scores.txt' based on the value of new score. Insert it to correct place
+// if it is a new top score. 
+void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username, int new_score_index)
+{
+    int i = 0, n = NUM_OF_TOP_SCORES;
+    FILE *scores_file_ptr = fopen("scores.txt", "w");
+
+    while ((i < n) && (top_scores[i] != 0))
+    {
+        if (new_score_index == i)
+        {
+            fprintf("%s %d\n", username, new_score);
+            n--;
+        }
+        fprintf("%s %d\n", top_score_usernames[i], top_scores[i]);
+    }
+
+    fclose(scores_file_ptr);
+}
+
+
+// Print top scores as a list. 
+void print_scores(int *top_scores, char **top_score_usernames)
+{
+    int i = 0;
+
+    while ((i < NUM_OF_TOP_SCORES) && (top_scores[i] != 0))
+    {
+        puts("TOP SCORES\n");
+        printf("%s %d\n", top_score_usernames[i], top_scores[i]);
+    }
+}
+
+
+// Free score arrays.
+void free_score_arrays(int *top_scores, char **top_score_usernames)
+{
+    int i;
+
+    free(top_scores);
+    for (i = 0; i < NUM_OF_TOP_SCORES; i++)
+        free(top_score_usernames[i]);
+    free(top_score_usernames);
+}
+
+
+// TODO: prevent space in username and character check
 
 // TODO: auto-play mode
