@@ -67,6 +67,7 @@ int check_password(PLAYER *credentials, int number_of_accounts, int username_ind
 void new_account_io(char *new_username, char *new_password);
 char *login_to_account_wrapper_io();
 
+MAZE_MAP *init_maps_array();
 void print_map_data(MAZE_MAP map);
 int import_map_from_file(const char *path, MAZE_MAP *new_map);
 int get_number_of_maps();
@@ -76,7 +77,7 @@ void print_single_map(MAZE_MAP map);
 void print_map_character(char ch);
 void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
-void free_maps_array(MAZE_MAP *maps, int number_of_maps);
+void free_maps_array(MAZE_MAP *maps);
 MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
 
 void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map);
@@ -99,6 +100,9 @@ void free_score_arrays(int *top_scores, char **top_score_usernames);
 char main_menu_io();
 void print_help_tutorial();
 void wait_prompt();
+int map_selection_io(MAZE_MAP *maps);
+void game_loop_wrapper(char *username);
+void score_saving_io(int new_score, char *username);
 
 
 int main()
@@ -123,6 +127,10 @@ int main()
             case '3':
                 print_help_tutorial();
                 break;
+            case '4':
+                game_loop_wrapper(username);
+                break;
+
         }
     }
     while (ch != '0');
@@ -375,9 +383,10 @@ void free_map(MAZE_MAP map)
 
 
 // Free arrays of the maps from a MAZE_MAP array.
-void free_maps_array(MAZE_MAP *maps, int number_of_maps)
+void free_maps_array(MAZE_MAP *maps)
 {
-    int i;
+    int i, number_of_maps;
+    number_of_maps = get_number_of_maps();
     for (i = 0; i < number_of_maps; i++) free_map(maps[i]);
 }
 
@@ -846,6 +855,8 @@ void print_game_over_screen(int status, int seconds_elapsed, int score)
     {
         printf("Game over. You are too slow.\nMicro world is way faster than this.\n");
     }
+
+    wait_prompt();
 }
 
 
@@ -983,6 +994,7 @@ char main_menu_io()
     puts("3 - Help and Tutorial");
     puts("4 - Play in Manual Mode");
     puts("5 - Play in Automatic Mode (WIP)");
+    puts("6 - Import New Map");
     puts("0 - Exit");
     printf("Enter option: ");
 
@@ -1037,5 +1049,111 @@ void wait_prompt()
     fgetc(stdin);
 }
 
+
+int map_selection_io(MAZE_MAP *maps)
+{
+    char ch = 'y';
+    int number_of_maps, selected_map;
+    int index_exist;
+
+    read_maps(maps);
+    number_of_maps = get_number_of_maps();
+
+    do {
+        CLEAR_SCREEN();
+        print_maps(maps, number_of_maps);
+        printf("Enter index of the map you want to select: ");
+        scanf("%d", &selected_map);
+
+        if ((selected_map < 0) || (number_of_maps <= selected_map))
+        {
+            index_exist = 0;
+            printf("Map index does not exist. Want to try again (y/n): ");
+            scanf("%c ", &ch);
+        }
+        else 
+        {
+            ch = 'n';
+            index_exist = 1;
+        }
+    }
+    while (ch == 'y');
+
+    if (index_exist == 0)
+        return -1;
+    else 
+        return selected_map;
+}
+
+
+MAZE_MAP *init_maps_array()
+{
+    int number_of_maps = get_number_of_maps();
+    MAZE_MAP *maps = (MAZE_MAP *) calloc(number_of_maps, sizeof(MAZE_MAP));
+    return maps;
+}
+
+
+void game_loop_wrapper(char *username)
+{
+    MAZE_MAP *maps;
+    int map_index, total_time, seconds_elapsed;
+    int status, score;
+
+    if (username == NULL)
+    {   
+        CLEAR_SCREEN();
+        puts("Please login first.");
+        wait_prompt();
+        return;
+    }
+
+    maps = init_maps_array();
+    map_index = map_selection_io(maps);
+    if (map_index == -1)
+        return;
+
+    total_time = calculate_total_seconds(maps[map_index]);
+    status = main_game_loop(maps[map_index], total_time, &seconds_elapsed);
+
+    free_maps_array(maps);
+
+    score = calculate_score(status, seconds_elapsed, total_time);
+    print_game_over_screen(status, seconds_elapsed, score);
+    
+    score_saving_io(score, username);
+}
+
+
+void score_saving_io(int new_score, char *username)
+{
+    int new_score_index;
+    int *top_scores = init_top_scores_array();
+    char ch, **top_score_usernames = init_top_score_usernames_array();
+
+    read_top_scores(top_scores, top_score_usernames);
+    new_score_index = compare_new_score(top_scores, new_score);
+
+    if (new_score_index < NUM_OF_TOP_SCORES)
+    {
+        CLEAR_SCREEN(); 
+
+        printf("You have a new top score! Want to save it? (y/n): ");
+        scanf("%c ", &ch);
+        if (ch == 'y')
+        {
+            update_top_scores(top_scores, top_score_usernames, new_score, username);
+            puts("Updated top scores.");
+            wait_prompt();
+        }
+        else
+        {
+            puts("Player chose to not save new top score.");
+            wait_prompt();
+        }
+    }
+
+    free_score_arrays(top_scores, top_score_usernames);
+}
 
 // TODO: auto-play mode
