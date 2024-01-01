@@ -96,22 +96,27 @@ void update_top_scores(int *top_scores, char **top_score_usernames, int new_scor
 void print_scores(int *top_scores, char **top_score_usernames);
 void free_score_arrays(int *top_scores, char **top_score_usernames);
 
+char main_menu_io();
+void print_help_tutorial();
+void wait_prompt();
+
 
 int main()
 {
-    int number_of_maps;
-    MAZE_MAP *maps, m;
+    char ch, *username = NULL;
 
-    number_of_maps = get_number_of_maps();
-    maps = calloc(number_of_maps, sizeof(MAZE_MAP));
-
-    // import_map_from_file("examplemap1.dat", &m);
-    // print_single_map(m);
-    // save_new_map(m);
-
-    read_maps(maps);
-    print_maps(maps, number_of_maps);
-    free_maps_array(maps, number_of_maps);
+    do {
+        CLEAR_SCREEN();
+        
+        ch = main_menu_io();
+        switch (ch)
+        {
+            case '1':
+                username = login_to_account_wrapper_io();
+                break;
+            case '2':
+        }
+    }
 
     return 0;
 }
@@ -943,6 +948,69 @@ void free_score_arrays(int *top_scores, char **top_score_usernames)
 }
 
 
-// TODO: prevent space in username and character check
+char main_menu_io()
+{
+    char ch;
+
+    CLEAR_SCREEN();
+    puts("1 - Login and Register");
+    puts("2 - Top Scores");
+    puts("3 - Help and Tutorial");
+    puts("4 - Play in Manual Mode");
+    puts("5 - Play in Automatic Mode (WIP)");
+    puts("0 - Exit");
+    printf("Enter option: ");
+
+    scanf("%c", &ch);
+    fgetc(stdin);
+    return ch;
+}
+
+
+void print_help_tutorial()
+{
+    CLEAR_SCREEN();
+    
+    puts("\nTHE GAME TUTORIAL");
+    puts("Hello new player! I know you will not read the following text,");
+    puts("but lets start. This game's name is Anti-Maze. In this game,");
+    puts("you are collecting subatomic particles to produce antimatter.");
+    puts("The more antimatter you produce, the better score you will get.");
+    puts("You move with arrow keys. The map consists of several characters.");
+    puts("'0' is empty space, you can walk trough it. '1' is wall, you cannot");
+    puts("pass it. 'X' is you. 'K' is micro black hole, moving into in accidentally");
+    puts("will result with a lost. 'C' is exit. You should reach 'C' to win");
+    puts("the game. 'e-', 'e+', 'P-', 'P+' are subatomic particles. Electron, positron");
+    puts("(antielectron), antiproton, proton, respectively. To produce an");
+    puts("antimatter atom, you need an antiproton and a positron. But keep");
+    puts("in mind, that particle-antiparticle pairs will annihilate each other.");
+    puts("For each map, there is a finite amount of time to complete the game.");
+    puts("The amount of time is different for different maps. If you couldn't complete");
+    puts("a game (reach 'C') in time, you lose. Faster you complete the game, better");
+    puts("the score you get. That's all, have fun!");
+
+    puts("\nACCOUNT SYSTEM");
+    puts("To start playing, you first need to login. If you don't have an account,");
+    puts("you can simply create a new one. Select the option 'Login and Register'");
+    puts("but leave username and password fields empty. The game will then ask");
+    puts("you about creating a new account. If you enter 'y', the game will prompt");
+    puts("you about a new username and password. If you enter something else, the");
+    puts("game will exit. After logging in, you can select the");
+    puts("'Play in Manual Mode' option, and start the game. Automatic mode doesn't");
+    puts("require an account, because it doesn't save scores.");
+
+    puts("\nMAPS (WIP)");
+    puts("...");
+
+    wait_prompt();
+}
+
+
+void wait_prompt()
+{
+    puts("Press ENTER to continue...");
+    fgetc(stdin);
+}
+
 
 // TODO: auto-play mode
