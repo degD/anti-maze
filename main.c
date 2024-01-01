@@ -93,7 +93,7 @@ int *init_top_scores_array();
 char **init_top_score_usernames_array();
 int compare_new_score(int *top_scores, int score);
 void update_top_scores(int *top_scores, char **top_score_usernames, int new_score, char *username);
-void print_scores(int *top_scores, char **top_score_usernames);
+void print_scores();
 void free_score_arrays(int *top_scores, char **top_score_usernames);
 
 char main_menu_io();
@@ -107,16 +107,25 @@ int main()
 
     do {
         CLEAR_SCREEN();
-        
+
         ch = main_menu_io();
         switch (ch)
         {
+            case '0':
+                CLEAR_SCREEN();
+                break;
             case '1':
                 username = login_to_account_wrapper_io();
                 break;
             case '2':
+                print_scores();
+                break;
+            case '3':
+                print_help_tutorial();
+                break;
         }
     }
+    while (ch != '0');
 
     return 0;
 }
@@ -586,6 +595,8 @@ char *login_to_account_wrapper_io()
     // creating a new account. New accounts get saved to 'login.dat' file.
     while (!login_successful)
     {
+        CLEAR_SCREEN();
+
         // When no username and password given, that means user wants to create a new account.
         login_screen_io(username, password, &new_login);
 
@@ -602,11 +613,13 @@ char *login_to_account_wrapper_io()
                 else
                 {
                     puts("Wrong password. Try again.");
+                    wait_prompt();
                 }
             }
             else
             {
                 puts("Username not found.");
+                wait_prompt();
             }
         }
         else if(new_login == 1)
@@ -614,6 +627,8 @@ char *login_to_account_wrapper_io()
             // Creat a new account for the user.
             while (!login_successful) 
             {
+                CLEAR_SCREEN();
+
                 // Ask for a new username and password.
                 new_account_io(username, password);
 
@@ -627,6 +642,7 @@ char *login_to_account_wrapper_io()
                 else 
                 {
                     puts("Username exists. Please select another username.");
+                    wait_prompt();
                 }
             }
         }
@@ -634,10 +650,12 @@ char *login_to_account_wrapper_io()
         {
             // Return NULL to indicate exit.
             puts("Exiting...");
+            wait_prompt();
             return NULL;
         }
     }
     puts("Login successful.");
+    wait_prompt();
 
 
     // Close the file and free allocated arrays.
@@ -921,18 +939,25 @@ void update_top_scores(int *top_scores, char **top_score_usernames, int new_scor
 
 
 // Print top scores as a list. 
-void print_scores(int *top_scores, char **top_score_usernames)
+void print_scores()
 {
-    int i = 0;
+    int i = 0, *top_scores;
+    char **top_score_usernames;
+
+    top_scores = init_top_scores_array();
+    top_score_usernames = init_top_score_usernames_array();
+    read_top_scores(top_scores, top_score_usernames);
 
     CLEAR_SCREEN();
-
     puts("TOP SCORES\n");
     while ((i < NUM_OF_TOP_SCORES) && (top_scores[i] != 0))
     {
         printf("%s %d\n", top_score_usernames[i], top_scores[i]);
         i++;
     }
+
+    free_score_arrays(top_scores, top_score_usernames);
+    wait_prompt();
 }
 
 
@@ -1008,7 +1033,7 @@ void print_help_tutorial()
 
 void wait_prompt()
 {
-    puts("Press ENTER to continue...");
+    puts("\nPress ENTER to continue...");
     fgetc(stdin);
 }
 
