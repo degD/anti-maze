@@ -1033,7 +1033,7 @@ char main_menu_io()
     puts("2 - Top Scores");
     puts("3 - Help and Tutorial");
     puts("4 - Play in Manual Mode");
-    puts("5 - Play in Automatic Mode (WIP)");
+    puts("5 - Play in Automatic Mode");
     puts("6 - Import New Map");
     puts("0 - Exit");
     printf("Enter option: ");
@@ -1076,8 +1076,22 @@ void print_help_tutorial()
     puts("'Play in Manual Mode' option, and start the game. Automatic mode doesn't");
     puts("require an account, because it doesn't save scores.");
 
-    puts("\nMAPS (WIP)");
-    puts("...");
+    puts("\nMAPS");
+    puts("Maps can be imported from text files. Imported maps get saved into a file");
+    puts("called 'maps.bin'. It is easy to generate new maps by hand. Use the symbols");
+    puts("that are referred in 'THE GAME TUTORIAL' to make your own maps. You can also");
+    puts("check example map files, to get a better grasp about their formatting.");
+
+    puts("\nSCORES");
+    puts("Top scores are saved in file called 'scores.txt'. When you reach a new high (top)");
+    puts("score, the game informs you about it. Asks you about saving your high score.");
+
+    puts("\nAUTOMATIC");
+    puts("Use a custom algorthm to test a map. The algorithm tries to reach the exit, and");
+    puts("informs you accordingly. If algorithm cannot reach the exit, this means the map");
+    puts("is unsolvable. After reaching the exit, the program prints the coordinates");
+    puts("for reaching the exit from the starting point. Using automatic mode doesn't require");
+    puts("an account, because there is no score calculations involved.");
 
     wait_prompt();
 }
