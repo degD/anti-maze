@@ -81,6 +81,7 @@ void print_maps(MAZE_MAP *maps, int number_of_maps);
 void free_map(MAZE_MAP map);
 void free_maps_array(MAZE_MAP *maps);
 MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
+void map_importing_wrapper();
 
 void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map);
 void print_inventory(char *inventory, int inventory_length);
@@ -107,11 +108,16 @@ int map_selection_io(MAZE_MAP *maps);
 void game_loop_wrapper(char *username);
 void score_saving_io(int new_score, char *username);
 
+char **copy_char_matrix(char **m, int h, int w);
+void print_coords(int **coords, int last_coord_index);
+int calculate_max_coords(MAZE_MAP map);
 void auto_play_wrapper();
 int **auto_play_mode(MAZE_MAP map, char *permitted, int *last_coord_index);
 int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int new_player_i, int new_player_j, int **coords, int *last_coord_index, int max_num_of_coords);
+int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index);
+int auto_mode_pre_movement_permitted_check(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j);
+int auto_mode_check_code_calls(MAZE_MAP map, int code, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords);
 int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords);
-void map_importing_wrapper();
 
 int main()
 {
@@ -1275,6 +1281,7 @@ void auto_play_wrapper()
             {
                 puts("Failed. Map is unsolvable.");
                 free_maps_array(maps);
+                wait_prompt();
                 return;
             }
         }
@@ -1362,8 +1369,9 @@ int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int
 
             if (result != 1) 
             {
-                coords[*last_coord_index][0] = new_player_i;
-                coords[*last_coord_index][1] = new_player_j;
+                *last_coord_index += 1;
+                coords[*last_coord_index][0] = player_i;
+                coords[*last_coord_index][1] = player_j;
             }
         }
     }
@@ -1372,11 +1380,10 @@ int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int
 }
 
 
-int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_i, int player_j)
+int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index)
 {
     int i;
     int new_player_i, new_player_j;
-    int found_exit = -1;
     int possible_coords[4][2] = {
         {player_i, player_j-1}, {player_i, player_j+1}, 
         {player_i-1, player_j}, {player_i+1, player_j}};
@@ -1389,11 +1396,18 @@ int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_
 
         if (check_map_boundaries(new_player_i, new_player_j, map))
         {
-            if (map_copy[new_player_i][new_player_j] == 'C') found_exit = i;
+            if (map_copy[new_player_i][new_player_j] == 'C')
+            {
+                *last_coord_index += 1;
+                coords[*last_coord_index][0] = new_player_i;
+                coords[*last_coord_index][1] = new_player_j;
+
+                return 1;
+            }
         }
     }
 
-    return found_exit;
+    return 0;
 }
 
 
@@ -1414,7 +1428,7 @@ int auto_mode_pre_movement_permitted_check(MAZE_MAP map, char *permitted, char *
 
         if (check_map_boundaries(new_player_i, new_player_j, map))
         {
-            if (strchr(permitted, map_copy[new_player_i][new_player_j])) found_permitted = i;
+            if (strchr(permitted, map_copy[new_player_i][new_player_j]) != NULL) found_permitted = i;
         }
     }
 
@@ -1457,17 +1471,19 @@ int auto_mode_check_code_calls(MAZE_MAP map, int code, char *permitted, char **m
 
 int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords)
 {
-    int exit_check, permitted_check;
+    int permitted_check;
     int result = 0;
     int new_player_i;
     int new_player_j;
     
     // Look around the current cell to find better/more optimal cells. 
-    exit_check = auto_mode_pre_movement_exit_check(map, map_copy, player_i, player_j);
-    permitted_check = auto_mode_pre_movement_permitted_check(map, permitted, map_copy, player_i, player_j);
+    result += auto_mode_pre_movement_exit_check(map, map_copy, player_i, player_j, coords, last_coord_index);
 
-    result += auto_mode_check_code_calls(map, exit_check, permitted, map_copy, player_i, player_j, coords, last_coord_index, max_num_of_coords);
-    result += auto_mode_check_code_calls(map, permitted_check, permitted, map_copy, player_i, player_j, coords, last_coord_index, max_num_of_coords);
+    if (result == 0)
+    {
+        permitted_check = auto_mode_pre_movement_permitted_check(map, permitted, map_copy, player_i, player_j);
+        result += auto_mode_check_code_calls(map, permitted_check, permitted, map_copy, player_i, player_j, coords, last_coord_index, max_num_of_coords);
+    }
 
     // Left
     if (result == 0) 
