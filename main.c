@@ -1293,7 +1293,6 @@ void auto_play_wrapper()
 int** auto_play_mode(MAZE_MAP map, char *permitted, int *last_coord_index)
 {
     int i;
-    char *inventory = calloc((map.height * map.width), sizeof(char));
     char **map_copy = copy_char_matrix(map.map_array, map.height, map.width);
     int max_num_of_coords = calculate_max_coords(map);
     int **coords;
@@ -1307,6 +1306,10 @@ int** auto_play_mode(MAZE_MAP map, char *permitted, int *last_coord_index)
     *last_coord_index = 0;
 
     result = auto_play_recursion(map, permitted, copy_char_matrix(map.map_array, map.height, map.width), map.player_i, map.player_j, coords, last_coord_index, max_num_of_coords);
+    
+    for (i = 0; i < map.height; i++) free(map_copy[i]);
+    free(map_copy);
+
     if (result != 1)
         return NULL;
     return coords;
@@ -1339,7 +1342,6 @@ int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int
             coords[*last_coord_index][0] = new_player_i;
             coords[*last_coord_index][1] = new_player_j;
 
-            // TODO: Add inventory
             result = auto_play_recursion(map, permitted, map_copy, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
 
             if (result != 1) 
@@ -1374,7 +1376,7 @@ int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_
 {
     int i;
     int new_player_i, new_player_j;
-    int found_exit = -1, found_permitted = -1;
+    int found_exit = -1;
     int possible_coords[4][2] = {
         {player_i, player_j-1}, {player_i, player_j+1}, 
         {player_i-1, player_j}, {player_i+1, player_j}};
@@ -1399,7 +1401,7 @@ int auto_mode_pre_movement_permitted_check(MAZE_MAP map, char *permitted, char *
 {
     int i;
     int new_player_i, new_player_j;
-    int found_exit = -1, found_permitted = -1;
+    int found_permitted = -1;
     int possible_coords[4][2] = {
         {player_i, player_j-1}, {player_i, player_j+1}, 
         {player_i-1, player_j}, {player_i+1, player_j}};
