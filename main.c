@@ -85,6 +85,7 @@ MAZE_MAP initialize_new_map(int height, int width, int player_i, int player_j);
 void update_player_location(int new_player_i, int new_player_j, MAZE_MAP *map);
 void print_inventory(char *inventory, int inventory_length);
 int check_map_boundaries(int i, int j, MAZE_MAP map);
+time_t time_elapsed(time_t start);
 int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed);
 int get_number_of_antimatter(char *inventory, int inventory_length);
 void print_game_over_screen(int status, int seconds_elapsed, int total_time);
@@ -110,6 +111,7 @@ void auto_play_wrapper();
 int** auto_play_mode(MAZE_MAP map, int *last_coord_index);
 int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int new_player_i, int new_player_j, int **coords, int *last_coord_index, int max_num_of_coords);
 int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords);
+void map_importing_wrapper();
 
 int main()
 {
@@ -140,6 +142,10 @@ int main()
             case '5':
                 auto_play_wrapper();
                 break;
+            case '6':
+                map_importing_wrapper();
+                break;
+
         }
     }
     while (ch != '0');
@@ -686,10 +692,17 @@ char *login_to_account_wrapper_io()
 }
 
 
+time_t time_elapsed(time_t start)
+{
+    return (time(NULL) - start);
+}
+
+
 int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
 {
-    int timer_start;
-    int game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
+    time_t timer_start = time(NULL);
+    int game_running = 1, game_complete = 0;
+    int esc_pressed = 0, game_lost = 0, timeout = 0;
     int new_player_i, new_player_j;
     int inventory_index = 0;
     int number_of_antimatter;
@@ -698,14 +711,18 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
     int ch;
 
     CLEAR_SCREEN();
+    printf("Total time: %d seconds!\n", total_time);
     print_single_map(map);
     print_inventory(inventory, inventory_index);
-
-    // Start counting time. Exit the game when timer reaches 'total_time'.
-    timer_start = time(NULL);
+    total_time = 5;
 
     while (game_running)
     {
+        if (time_elapsed(timer_start) > total_time)
+        {
+            game_running = 0;
+            timeout = 1;
+        }
 
         ch = _getch();
         if (ch == _ARROW_KEY) 
@@ -730,7 +747,11 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
                     break;                                                 
             }
 
-            new_block = map.map_array[new_player_i][new_player_j];
+            new_block = '1';
+            if (check_map_boundaries(new_player_i, new_player_j, map))
+            {
+                new_block = map.map_array[new_player_i][new_player_j];
+            }
             if (new_block != '1')
             {
                 update_player_location(new_player_i, new_player_j, &map);
@@ -749,8 +770,15 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
             }
 
             CLEAR_SCREEN();
+            printf("Total time: %d seconds!\n", total_time);
             print_single_map(map);
             print_inventory(inventory, inventory_index);
+
+            if (time_elapsed(timer_start) > total_time)
+            {
+                game_running = 0;
+                timeout = 1;
+            }
         }
         else if (ch == _ESC_KEY)
         {
@@ -759,6 +787,7 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
         }
     }
 
+    *seconds_elapsed = time_elapsed(timer_start);
     number_of_antimatter = get_number_of_antimatter(inventory, inventory_index);
     free(inventory);
 
@@ -768,9 +797,8 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
         return -1;
     if (esc_pressed)
         return -2;
-    // TODO: ADD TIMEOUT 'return -3'
-
-
+    if (timeout)
+        return -3;
     // Return '-4' when exiting in an unexpected way.
     return -4;
 }
@@ -1135,7 +1163,8 @@ void game_loop_wrapper(char *username)
     score = calculate_score(status, seconds_elapsed, total_time);
     print_game_over_screen(status, seconds_elapsed, score);
     
-    score_saving_io(score, username);
+    if (status >= 0)
+        score_saving_io(score, username);
 }
 
 
@@ -1430,4 +1459,33 @@ int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int play
     }
 
     return result;
+}
+
+
+void map_importing_wrapper()
+{
+    MAZE_MAP new_map;
+    char path[MAX_PATH_LEN];
+    int status;
+
+    CLEAR_SCREEN();
+
+    printf("Enter the file path:\n");
+    fgets(path, MAX_PATH_LEN, stdin);
+    path[strcspn(path, "\n")] = '\0';
+
+    status = import_map_from_file(path, &new_map);
+    if (status == 1)
+    {
+        puts("Map import successful. Saving...");
+        save_new_map(new_map);
+
+        wait_prompt();
+    }
+    else 
+    {
+        puts("Path is probably incorrect. Failed to import.");
+
+        wait_prompt();
+    }
 }
