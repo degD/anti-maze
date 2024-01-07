@@ -108,7 +108,7 @@ void game_loop_wrapper(char *username);
 void score_saving_io(int new_score, char *username);
 
 void auto_play_wrapper();
-int** auto_play_mode(MAZE_MAP map, int *last_coord_index);
+int **auto_play_mode(MAZE_MAP map, char *permitted, int *last_coord_index);
 int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int new_player_i, int new_player_j, int **coords, int *last_coord_index, int max_num_of_coords);
 int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords);
 void map_importing_wrapper();
@@ -1235,21 +1235,49 @@ int calculate_max_coords(MAZE_MAP map)
 
 void auto_play_wrapper()
 {
-    int i, **coords, last;
+    int map_i, **coords, last;
     MAZE_MAP *maps = init_maps_array();
 
-    i = map_selection_io(maps);
-    if (i != -1)
-    {
-        coords = auto_play_mode(maps[i], &last);    
-        print_coords(coords, last);
+    CLEAR_SCREEN();
+    puts("Auto-Play Mode Selected.");
+    wait_prompt();
 
+    map_i = map_selection_io(maps);
+    if (map_i != -1)
+    {
+        CLEAR_SCREEN();
+        puts("Trying optimal settings, only taking P- and e+ particles.");
+        wait_prompt();
+
+        coords = auto_play_mode(maps[map_i], "pE", &last);
+
+        if (coords == NULL)
+        {
+            puts("First try failed. Trying non-optimal routes.");
+            wait_prompt();
+
+            coords = auto_play_mode(maps[map_i], "pPeE", &last);
+
+            if (coords == NULL)
+            {
+                puts("Failed. Map is unsolvable.");
+                free_maps_array(maps);
+                return;
+            }
+        }
+
+        CLEAR_SCREEN();
+
+        puts("Coordinates of movement:");
+        print_coords(coords, last);
         wait_prompt();
     }
+
+    free_maps_array(maps);
 }
 
 
-int** auto_play_mode(MAZE_MAP map, int *last_coord_index)
+int** auto_play_mode(MAZE_MAP map, char *permitted, int *last_coord_index)
 {
     int i;
     char *inventory = calloc((map.height * map.width), sizeof(char));
@@ -1265,8 +1293,8 @@ int** auto_play_mode(MAZE_MAP map, int *last_coord_index)
 
     *last_coord_index = 0;
 
-    result = auto_play_recursion(map, "pE", copy_char_matrix(map.map_array, map.height, map.width), map.player_i, map.player_j, coords, last_coord_index, max_num_of_coords);
-    if (result == -1)
+    result = auto_play_recursion(map, permitted, copy_char_matrix(map.map_array, map.height, map.width), map.player_i, map.player_j, coords, last_coord_index, max_num_of_coords);
+    if (result != 1)
         return NULL;
     return coords;
 }
