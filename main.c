@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
 
 #ifdef _WIN32
     #include <conio.h>
@@ -104,6 +106,10 @@ int map_selection_io(MAZE_MAP *maps);
 void game_loop_wrapper(char *username);
 void score_saving_io(int new_score, char *username);
 
+void auto_play_wrapper();
+int** auto_play_mode(MAZE_MAP map, int *last_coord_index);
+int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int new_player_i, int new_player_j, int **coords, int *last_coord_index, int max_num_of_coords);
+int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords);
 
 int main()
 {
@@ -131,7 +137,9 @@ int main()
             case '4':
                 game_loop_wrapper(username);
                 break;
-
+            case '5':
+                auto_play_wrapper();
+                break;
         }
     }
     while (ch != '0');
@@ -680,6 +688,7 @@ char *login_to_account_wrapper_io()
 
 int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
 {
+    int timer_start;
     int game_running = 1, game_complete = 0, esc_pressed = 0, game_lost = 0;
     int new_player_i, new_player_j;
     int inventory_index = 0;
@@ -688,18 +697,15 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
     char new_block;
     int ch;
 
-
-    // TODO: clock and score calculation
-    *seconds_elapsed = 1;
-
     CLEAR_SCREEN();
     print_single_map(map);
     print_inventory(inventory, inventory_index);
 
+    // Start counting time. Exit the game when timer reaches 'total_time'.
+    timer_start = time(NULL);
+
     while (game_running)
     {
-        // TODO: Use thread for user input.
-        // TODO: Use thread for time.
 
         ch = _getch();
         if (ch == _ARROW_KEY) 
@@ -1166,4 +1172,262 @@ void score_saving_io(int new_score, char *username)
     free_score_arrays(top_scores, top_score_usernames);
 }
 
-// TODO: auto-play mode
+
+// Return a deep-copy of char matrix (2D-array) 'm'.
+char **copy_char_matrix(char **m, int h, int w) 
+{
+    int i, j;
+    char **copy; 
+    
+    copy = (char **)calloc(h, sizeof(char *));
+    for (i = 0; i < h; i++) 
+    {
+        copy[i] = calloc(w, sizeof(char));
+        for (j = 0; j < w; j++) copy[i][j] = m[i][j];
+    }
+
+    return copy;
+}
+
+
+void print_coords(int **coords, int last_coord_index)
+{
+    int i;
+    for (i = 0; i < last_coord_index+1; i++)
+        printf("%d, %d\n", coords[i][0], coords[i][1]);
+}
+
+
+int calculate_max_coords(MAZE_MAP map) 
+{
+    return map.height * map.width * 2;
+}
+
+
+void auto_play_wrapper()
+{
+    int i, **coords, last;
+    MAZE_MAP *maps = init_maps_array();
+
+    i = map_selection_io(maps);
+    if (i != -1)
+    {
+        coords = auto_play_mode(maps[i], &last);    
+        print_coords(coords, last);
+
+        wait_prompt();
+    }
+}
+
+
+int** auto_play_mode(MAZE_MAP map, int *last_coord_index)
+{
+    int i;
+    char *inventory = calloc((map.height * map.width), sizeof(char));
+    char **map_copy = copy_char_matrix(map.map_array, map.height, map.width);
+    int max_num_of_coords = calculate_max_coords(map);
+    int **coords;
+    int result;
+
+    coords = calloc(max_num_of_coords, sizeof(int *));
+    for (i = 0; i < max_num_of_coords; i++) coords[i] = calloc(2, sizeof(int));
+    coords[0][0] = map.player_i;
+    coords[0][1] = map.player_j;
+
+    *last_coord_index = 0;
+
+    result = auto_play_recursion(map, "pE", copy_char_matrix(map.map_array, map.height, map.width), map.player_i, map.player_j, coords, last_coord_index, max_num_of_coords);
+    if (result == -1)
+        return NULL;
+    return coords;
+}
+
+
+int auto_play_recursion_call(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int new_player_i, int new_player_j, int **coords, int *last_coord_index, int max_num_of_coords)
+{
+    int result = 0;
+    char new_block; 
+
+    if (*last_coord_index == max_num_of_coords) return -1;
+
+    if (check_map_boundaries(new_player_i, new_player_j, map))
+    {
+        new_block = map_copy[new_player_i][new_player_j];
+        if (new_block == 'C')
+        {
+            *last_coord_index += 1;
+            coords[*last_coord_index][0] = new_player_i;
+            coords[*last_coord_index][1] = new_player_j;
+
+            return 1;
+        }
+        else if (strchr(permitted, new_block) != NULL)
+        {
+            map_copy[new_player_i][new_player_j] = 'x';
+
+            *last_coord_index += 1;
+            coords[*last_coord_index][0] = new_player_i;
+            coords[*last_coord_index][1] = new_player_j;
+
+            // TODO: Add inventory
+            result = auto_play_recursion(map, permitted, map_copy, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+
+            if (result != 1) 
+            {
+                coords[*last_coord_index][0] = new_player_i;
+                coords[*last_coord_index][1] = new_player_j;
+            }
+        }
+        else if (new_block == '0')
+        {
+            map_copy[new_player_i][new_player_j] = 'x';
+
+            *last_coord_index += 1;
+            coords[*last_coord_index][0] = new_player_i;
+            coords[*last_coord_index][1] = new_player_j;
+
+            result = auto_play_recursion(map, permitted, map_copy, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+
+            if (result != 1) 
+            {
+                coords[*last_coord_index][0] = new_player_i;
+                coords[*last_coord_index][1] = new_player_j;
+            }
+        }
+    }
+
+    return result;
+}
+
+
+int auto_mode_pre_movement_exit_check(MAZE_MAP map, char **map_copy, int player_i, int player_j)
+{
+    int i;
+    int new_player_i, new_player_j;
+    int found_exit = -1, found_permitted = -1;
+    int possible_coords[4][2] = {
+        {player_i, player_j-1}, {player_i, player_j+1}, 
+        {player_i-1, player_j}, {player_i+1, player_j}};
+        // Left, right, up, down
+
+    for (i = 0; i < 4; i++)
+    {
+        new_player_i = possible_coords[i][0];
+        new_player_j = possible_coords[i][1];
+
+        if (check_map_boundaries(new_player_i, new_player_j, map))
+        {
+            if (map_copy[new_player_i][new_player_j] == 'C') found_exit = i;
+        }
+    }
+
+    return found_exit;
+}
+
+
+int auto_mode_pre_movement_permitted_check(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j)
+{
+    int i;
+    int new_player_i, new_player_j;
+    int found_exit = -1, found_permitted = -1;
+    int possible_coords[4][2] = {
+        {player_i, player_j-1}, {player_i, player_j+1}, 
+        {player_i-1, player_j}, {player_i+1, player_j}};
+        // Left, right, up, down
+
+    for (i = 0; i < 4; i++)
+    {
+        new_player_i = possible_coords[i][0];
+        new_player_j = possible_coords[i][1];
+
+        if (check_map_boundaries(new_player_i, new_player_j, map))
+        {
+            if (strchr(permitted, map_copy[new_player_i][new_player_j])) found_permitted = i;
+        }
+    }
+
+    return found_permitted;
+}
+
+
+int auto_mode_check_code_calls(MAZE_MAP map, int code, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords)
+{
+    int new_player_i, new_player_j;
+    int result = 0;
+
+    switch (code)
+    {
+        case 0:
+            new_player_i = player_i;
+            new_player_j = player_j - 1;
+            result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+            break;
+        case 1:
+            new_player_i = player_i;
+            new_player_j = player_j + 1;
+            result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+            break;
+        case 2:
+            new_player_i = player_i - 1;
+            new_player_j = player_j;
+            result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+            break;
+        case 3:
+            new_player_i = player_i + 1;
+            new_player_j = player_j;
+            result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+            break;
+    }
+
+    return result;
+}
+
+
+int auto_play_recursion(MAZE_MAP map, char *permitted, char **map_copy, int player_i, int player_j, int **coords, int *last_coord_index, int max_num_of_coords)
+{
+    int exit_check, permitted_check;
+    int result = 0;
+    int new_player_i;
+    int new_player_j;
+    
+    // Look around the current cell to find better/more optimal cells. 
+    exit_check = auto_mode_pre_movement_exit_check(map, map_copy, player_i, player_j);
+    permitted_check = auto_mode_pre_movement_permitted_check(map, permitted, map_copy, player_i, player_j);
+
+    result += auto_mode_check_code_calls(map, exit_check, permitted, map_copy, player_i, player_j, coords, last_coord_index, max_num_of_coords);
+    result += auto_mode_check_code_calls(map, permitted_check, permitted, map_copy, player_i, player_j, coords, last_coord_index, max_num_of_coords);
+
+    // Left
+    if (result == 0) 
+    {
+        new_player_i = player_i;
+        new_player_j = player_j - 1;
+        result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+    }
+
+    // Right
+    if (result == 0) 
+    {
+        new_player_i = player_i;
+        new_player_j = player_j + 1;
+        result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+    }
+
+    // Up
+    if (result == 0) 
+    {
+        new_player_i = player_i - 1;
+        new_player_j = player_j;
+        result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+    }
+
+    // Down
+    if (result == 0) 
+    {
+        new_player_i = player_i + 1;
+        new_player_j = player_j;
+        result += auto_play_recursion_call(map, permitted, map_copy, player_i, player_j, new_player_i, new_player_j, coords, last_coord_index, max_num_of_coords);
+    }
+
+    return result;
+}
