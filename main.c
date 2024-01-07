@@ -108,6 +108,7 @@ void score_saving_io(int new_score, char *username);
 int main()
 {
     char ch, *username = NULL;
+    // char ch = '4', *username = "sam";
 
     do {
         CLEAR_SCREEN();
@@ -689,6 +690,7 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
 
 
     // TODO: clock and score calculation
+    *seconds_elapsed = 1;
 
     CLEAR_SCREEN();
     print_single_map(map);
@@ -854,6 +856,10 @@ void print_game_over_screen(int status, int seconds_elapsed, int score)
     else if (status == -3)  // Timeout.
     {
         printf("Game over. You are too slow.\nMicro world is way faster than this.\n");
+    }
+    else 
+    {
+        printf("Something unexpected happened.\nThat is weird...\n");
     }
 
     wait_prompt();
@@ -1064,12 +1070,14 @@ int map_selection_io(MAZE_MAP *maps)
         print_maps(maps, number_of_maps);
         printf("Enter index of the map you want to select: ");
         scanf("%d", &selected_map);
+        fgetc(stdin);
 
         if ((selected_map < 0) || (number_of_maps <= selected_map))
         {
             index_exist = 0;
             printf("Map index does not exist. Want to try again (y/n): ");
-            scanf("%c ", &ch);
+            scanf(" %c", &ch);
+            fgetc(stdin);
         }
         else 
         {
@@ -1139,7 +1147,9 @@ void score_saving_io(int new_score, char *username)
         CLEAR_SCREEN(); 
 
         printf("You have a new top score! Want to save it? (y/n): ");
-        scanf("%c ", &ch);
+        scanf("%c", &ch);
+        fgetc(stdin);
+
         if (ch == 'y')
         {
             update_top_scores(top_scores, top_score_usernames, new_score, username);
