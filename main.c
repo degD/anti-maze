@@ -714,7 +714,6 @@ int main_game_loop(MAZE_MAP map, int total_time, int *seconds_elapsed)
     printf("Total time: %d seconds!\n", total_time);
     print_single_map(map);
     print_inventory(inventory, inventory_index);
-    total_time = 5;
 
     while (game_running)
     {
